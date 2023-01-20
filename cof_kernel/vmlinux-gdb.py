@@ -1,0 +1,1 @@
+/home/ubuntu/zebram-kern/scripts/gdb/vmlinux-gdb.py
