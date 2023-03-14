@@ -1505,19 +1505,12 @@ static inline struct page *alloc_slab_page(struct kmem_cache *s,
 	
 	
 	if(flags & __GFP_ATOMIC) {
-		//pr_warn("atomic allocation -- %s\n", s->name);
 		alloc_flags |= __GFP_ATOMIC;
-		//goto buddy;
 	}	
 
 
 	if(flags & ___GFP_COF) {
-		//pr_info("GFP_COF\n");
 		n_pages = 1 << order;
-		//if(n_pages > 1) {
-		//	pr_err("Cannot support > 1 page atm, fallback on buddy\n");
-		//	goto buddy;
-		//}
 		v_addr = __vmalloc(PAGE_SIZE * n_pages, alloc_flags, PAGE_KERNEL);
 		if(!v_addr) {
 			pr_err("vmalloc() failed for n_pages %lu\n", n_pages);
@@ -1797,9 +1790,6 @@ static void free_slab(struct kmem_cache *s, struct page *page)
 
 static void discard_slab(struct kmem_cache *s, struct page *page)
 {
-	//if(s->flags & SLAB_COF) {
-	//	pr_info("SLAB COF discard_slab -- %s\n", s->name);
-	//}
 	dec_slabs_node(s, page_to_nid(page), page->objects);
 	free_slab(s, page);
 }
@@ -3068,10 +3058,8 @@ void kmem_cache_free(struct kmem_cache *s, void *x)
 	s = cache_from_obj(s, x);
 	if (!s)
 		return;
-	//pr_info("after cahce_from_obj\n");
 	slab_free(s, cof_virt_to_head_page(s, x), x, NULL, 1, _RET_IP_);
 	trace_kmem_cache_free(_RET_IP_, x);
-	//pr_info("after trace\n");
 }
 EXPORT_SYMBOL(kmem_cache_free);
 
@@ -4000,21 +3988,10 @@ void kfree(const void *x)
 	if(is_vmalloc_addr(x)) {
 		page = cof_virt_to_head_page(NULL, x);
 		if(page == NULL) { //kmalloc_order() allocation
-		//cof_page = (struct cof_page *) page;
 			pr_info("kfree() -- vmalloc_addr just vfree()\n");
 			vfree(x);
 			return;
 		}
-		else {
-			//pr_info("kfree() - cache: %s\n", page->slab_cache->name);
-		}
-	//	vm_area = find_vm_area(x);
-	//	if(vm_area == NULL) {
-	//		pr_err("Something is rotten in the state of Denmark\n");
-	//	}
-	//	pr_info("nr_pages = %lu\n", vm_area->nr_pages);
-	//	vfree(vm_area->addr);
-	//	return;
 	}
 
 	page = cof_virt_to_head_page(NULL, x);
