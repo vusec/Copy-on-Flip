@@ -1092,164 +1092,164 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
 			  const char *msg,
 			  const char *other_detail)
 {
-//	char *p;
-//	int row = -1, chan = -1;
-//	int pos[EDAC_MAX_LAYERS] = { top_layer, mid_layer, low_layer };
-//	int i, n_labels = 0;
-//	u8 grain_bits;
-//	struct edac_raw_error_desc *e = &mci->error_desc;
+	char *p;
+	int row = -1, chan = -1;
+	int pos[EDAC_MAX_LAYERS] = { top_layer, mid_layer, low_layer };
+	int i, n_labels = 0;
+	u8 grain_bits;
+	struct edac_raw_error_desc *e = &mci->error_desc;
 	struct page *vuln_page;
 	
-//	edac_dbg(3, "MC%d\n", mci->mc_idx);
-//
-//	/* Fills the error report buffer */
-//	memset(e, 0, sizeof (*e));
-//	e->error_count = error_count;
-//	e->top_layer = top_layer;
-//	e->mid_layer = mid_layer;
-//	e->low_layer = low_layer;
-//	e->page_frame_number = page_frame_number;
-//	e->offset_in_page = offset_in_page;
-//	e->syndrome = syndrome;
-//	e->msg = msg;
-//	e->other_detail = other_detail;
-//
-//	/*
-//	 * Check if the event report is consistent and if the memory
-//	 * location is known. If it is known, enable_per_layer_report will be
-//	 * true, the DIMM(s) label info will be filled and the per-layer
-//	 * error counters will be incremented.
-//	 */
-//	for (i = 0; i < mci->n_layers; i++) {
-//		if (pos[i] >= (int)mci->layers[i].size) {
-//
-//			edac_mc_printk(mci, KERN_ERR,
-//				       "INTERNAL ERROR: %s value is out of range (%d >= %d)\n",
-//				       edac_layer_name[mci->layers[i].type],
-//				       pos[i], mci->layers[i].size);
-//			/*
-//			 * Instead of just returning it, let's use what's
-//			 * known about the error. The increment routines and
-//			 * the DIMM filter logic will do the right thing by
-//			 * pointing the likely damaged DIMMs.
-//			 */
-//			pos[i] = -1;
-//		}
-//		if (pos[i] >= 0)
-//			e->enable_per_layer_report = true;
-//	}
-//
-//	/*
-//	 * Get the dimm label/grain that applies to the match criteria.
-//	 * As the error algorithm may not be able to point to just one memory
-//	 * stick, the logic here will get all possible labels that could
-//	 * pottentially be affected by the error.
-//	 * On FB-DIMM memory controllers, for uncorrected errors, it is common
-//	 * to have only the MC channel and the MC dimm (also called "branch")
-//	 * but the channel is not known, as the memory is arranged in pairs,
-//	 * where each memory belongs to a separate channel within the same
-//	 * branch.
-//	 */
-//	p = e->label;
-//	*p = '\0';
-//
-//	for (i = 0; i < mci->tot_dimms; i++) {
-//		struct dimm_info *dimm = mci->dimms[i];
-//
-//		if (top_layer >= 0 && top_layer != dimm->location[0])
-//			continue;
-//		if (mid_layer >= 0 && mid_layer != dimm->location[1])
-//			continue;
-//		if (low_layer >= 0 && low_layer != dimm->location[2])
-//			continue;
-//
-//		/* get the max grain, over the error match range */
-//		if (dimm->grain > e->grain)
-//			e->grain = dimm->grain;
-//
-//		/*
-//		 * If the error is memory-controller wide, there's no need to
-//		 * seek for the affected DIMMs because the whole
-//		 * channel/memory controller/...  may be affected.
-//		 * Also, don't show errors for empty DIMM slots.
-//		 */
-//		if (e->enable_per_layer_report && dimm->nr_pages) {
-//			if (n_labels >= EDAC_MAX_LABELS) {
-//				e->enable_per_layer_report = false;
-//				break;
-//			}
-//			n_labels++;
-//			if (p != e->label) {
-//				strcpy(p, OTHER_LABEL);
-//				p += strlen(OTHER_LABEL);
-//			}
-//			strcpy(p, dimm->label);
-//			p += strlen(p);
-//			*p = '\0';
-//
-//			/*
-//			 * get csrow/channel of the DIMM, in order to allow
-//			 * incrementing the compat API counters
-//			 */
-//			edac_dbg(4, "%s csrows map: (%d,%d)\n",
-//				 mci->csbased ? "rank" : "dimm",
-//				 dimm->csrow, dimm->cschannel);
-//			if (row == -1)
-//				row = dimm->csrow;
-//			else if (row >= 0 && row != dimm->csrow)
-//				row = -2;
-//
-//			if (chan == -1)
-//				chan = dimm->cschannel;
-//			else if (chan >= 0 && chan != dimm->cschannel)
-//				chan = -2;
-//		}
-//	}
-//
-//	if (!e->enable_per_layer_report) {
-//		strcpy(e->label, "any memory");
-//	} else {
-//		edac_dbg(4, "csrow/channel to increment: (%d,%d)\n", row, chan);
-//		if (p == e->label)
-//			strcpy(e->label, "unknown memory");
-//		if (type == HW_EVENT_ERR_CORRECTED) {
-//			if (row >= 0) {
-//				mci->csrows[row]->ce_count += error_count;
-//				if (chan >= 0)
-//					mci->csrows[row]->channels[chan]->ce_count += error_count;
-//			}
-//		} else
-//			if (row >= 0)
-//				mci->csrows[row]->ue_count += error_count;
-//	}
-//
-//	/* Fill the RAM location data */
-//	p = e->location;
-//
-//	for (i = 0; i < mci->n_layers; i++) {
-//		if (pos[i] < 0)
-//			continue;
-//
-//		p += sprintf(p, "%s:%d ",
-//			     edac_layer_name[mci->layers[i].type],
-//			     pos[i]);
-//	}
-//	if (p > e->location)
-//		*(p - 1) = '\0';
-//
-//	/* Sanity-check driver-supplied grain value. */
-//	if (WARN_ON_ONCE(!e->grain))
-//		e->grain = 1;
-//
-//	grain_bits = fls_long(e->grain - 1);
-//
-//	/* Report the error via the trace interface */
-//	if (IS_ENABLED(CONFIG_RAS))
-//		trace_mc_event(type, e->msg, e->label, e->error_count,
-//			       mci->mc_idx, e->top_layer, e->mid_layer,
-//			       e->low_layer,
-//			       (e->page_frame_number << PAGE_SHIFT) | e->offset_in_page,
-//			       grain_bits, e->syndrome, e->other_detail);
+	edac_dbg(3, "MC%d\n", mci->mc_idx);
+
+	/* Fills the error report buffer */
+	memset(e, 0, sizeof (*e));
+	e->error_count = error_count;
+	e->top_layer = top_layer;
+	e->mid_layer = mid_layer;
+	e->low_layer = low_layer;
+	e->page_frame_number = page_frame_number;
+	e->offset_in_page = offset_in_page;
+	e->syndrome = syndrome;
+	e->msg = msg;
+	e->other_detail = other_detail;
+
+	/*
+	 * Check if the event report is consistent and if the memory
+	 * location is known. If it is known, enable_per_layer_report will be
+	 * true, the DIMM(s) label info will be filled and the per-layer
+	 * error counters will be incremented.
+	 */
+	for (i = 0; i < mci->n_layers; i++) {
+		if (pos[i] >= (int)mci->layers[i].size) {
+
+			edac_mc_printk(mci, KERN_ERR,
+				       "INTERNAL ERROR: %s value is out of range (%d >= %d)\n",
+				       edac_layer_name[mci->layers[i].type],
+				       pos[i], mci->layers[i].size);
+			/*
+			 * Instead of just returning it, let's use what's
+			 * known about the error. The increment routines and
+			 * the DIMM filter logic will do the right thing by
+			 * pointing the likely damaged DIMMs.
+			 */
+			pos[i] = -1;
+		}
+		if (pos[i] >= 0)
+			e->enable_per_layer_report = true;
+	}
+
+	/*
+	 * Get the dimm label/grain that applies to the match criteria.
+	 * As the error algorithm may not be able to point to just one memory
+	 * stick, the logic here will get all possible labels that could
+	 * pottentially be affected by the error.
+	 * On FB-DIMM memory controllers, for uncorrected errors, it is common
+	 * to have only the MC channel and the MC dimm (also called "branch")
+	 * but the channel is not known, as the memory is arranged in pairs,
+	 * where each memory belongs to a separate channel within the same
+	 * branch.
+	 */
+	p = e->label;
+	*p = '\0';
+
+	for (i = 0; i < mci->tot_dimms; i++) {
+		struct dimm_info *dimm = mci->dimms[i];
+
+		if (top_layer >= 0 && top_layer != dimm->location[0])
+			continue;
+		if (mid_layer >= 0 && mid_layer != dimm->location[1])
+			continue;
+		if (low_layer >= 0 && low_layer != dimm->location[2])
+			continue;
+
+		/* get the max grain, over the error match range */
+		if (dimm->grain > e->grain)
+			e->grain = dimm->grain;
+
+		/*
+		 * If the error is memory-controller wide, there's no need to
+		 * seek for the affected DIMMs because the whole
+		 * channel/memory controller/...  may be affected.
+		 * Also, don't show errors for empty DIMM slots.
+		 */
+		if (e->enable_per_layer_report && dimm->nr_pages) {
+			if (n_labels >= EDAC_MAX_LABELS) {
+				e->enable_per_layer_report = false;
+				break;
+			}
+			n_labels++;
+			if (p != e->label) {
+				strcpy(p, OTHER_LABEL);
+				p += strlen(OTHER_LABEL);
+			}
+			strcpy(p, dimm->label);
+			p += strlen(p);
+			*p = '\0';
+
+			/*
+			 * get csrow/channel of the DIMM, in order to allow
+			 * incrementing the compat API counters
+			 */
+			edac_dbg(4, "%s csrows map: (%d,%d)\n",
+				 mci->csbased ? "rank" : "dimm",
+				 dimm->csrow, dimm->cschannel);
+			if (row == -1)
+				row = dimm->csrow;
+			else if (row >= 0 && row != dimm->csrow)
+				row = -2;
+
+			if (chan == -1)
+				chan = dimm->cschannel;
+			else if (chan >= 0 && chan != dimm->cschannel)
+				chan = -2;
+		}
+	}
+
+	if (!e->enable_per_layer_report) {
+		strcpy(e->label, "any memory");
+	} else {
+		edac_dbg(4, "csrow/channel to increment: (%d,%d)\n", row, chan);
+		if (p == e->label)
+			strcpy(e->label, "unknown memory");
+		if (type == HW_EVENT_ERR_CORRECTED) {
+			if (row >= 0) {
+				mci->csrows[row]->ce_count += error_count;
+				if (chan >= 0)
+					mci->csrows[row]->channels[chan]->ce_count += error_count;
+			}
+		} else
+			if (row >= 0)
+				mci->csrows[row]->ue_count += error_count;
+	}
+
+	/* Fill the RAM location data */
+	p = e->location;
+
+	for (i = 0; i < mci->n_layers; i++) {
+		if (pos[i] < 0)
+			continue;
+
+		p += sprintf(p, "%s:%d ",
+			     edac_layer_name[mci->layers[i].type],
+			     pos[i]);
+	}
+	if (p > e->location)
+		*(p - 1) = '\0';
+
+	/* Sanity-check driver-supplied grain value. */
+	if (WARN_ON_ONCE(!e->grain))
+		e->grain = 1;
+
+	grain_bits = fls_long(e->grain - 1);
+
+	/* Report the error via the trace interface */
+	if (IS_ENABLED(CONFIG_RAS))
+		trace_mc_event(type, e->msg, e->label, e->error_count,
+			       mci->mc_idx, e->top_layer, e->mid_layer,
+			       e->low_layer,
+			       (e->page_frame_number << PAGE_SHIFT) | e->offset_in_page,
+			       grain_bits, e->syndrome, e->other_detail);
 
 	if(type == HW_EVENT_ERR_CORRECTED){
 	vuln_page = pfn_to_page(page_frame_number);
@@ -1269,6 +1269,6 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
 		pr_info("[COF EDAC] Page @PFN %#lx had correctable error, possible templating -> Setting PG_flip\n", page_frame_number);
 	}
 	}
-	//edac_raw_mc_handle_error(type, mci, e);
+	edac_raw_mc_handle_error(type, mci, e);
 }
 EXPORT_SYMBOL_GPL(edac_mc_handle_error);
