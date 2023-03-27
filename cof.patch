@@ -1,0 +1,3892 @@
+From dd64f2291ebe78f36e27989329bba5cd0249a9c5 Mon Sep 17 00:00:00 2001
+From: Andrea Di Dio <andreadidio98@gmail.com>
+Date: Mon, 27 Mar 2023 15:33:04 +0200
+Subject: [PATCH] cof_changes
+
+---
+ drivers/ata/libata-core.c                     |   4 +-
+ drivers/edac/edac_mc.c                        |  25 +-
+ .../net/ethernet/mellanox/mlx5/core/alloc.c   |   4 +-
+ .../net/ethernet/mellanox/mlx5/core/fs_core.c |  12 +-
+ drivers/virtio/virtio_ring.c                  |   5 +-
+ fs/binfmt_elf.c                               |  38 +-
+ fs/binfmt_elf_fdpic.c                         |  20 +-
+ fs/binfmt_misc.c                              |   4 +-
+ fs/char_dev.c                                 |   4 +-
+ fs/coredump.c                                 |   6 +-
+ fs/dcache.c                                   |   6 +-
+ fs/dcookies.c                                 |  10 +-
+ fs/eventfd.c                                  |   2 +-
+ fs/eventpoll.c                                |   2 +-
+ fs/exec.c                                     |   2 +-
+ fs/ext4/dir.c                                 |   4 +-
+ fs/ext4/hash.c                                |   2 +-
+ fs/ext4/mballoc.c                             |   4 +-
+ fs/ext4/super.c                               |  26 +-
+ fs/fhandle.c                                  |   4 +-
+ fs/file.c                                     |   2 +-
+ fs/file_table.c                               |   4 +-
+ fs/fs_context.c                               |   6 +-
+ fs/fsopen.c                                   |   2 +-
+ fs/inode.c                                    |   4 +-
+ fs/io_uring.c                                 |  16 +-
+ fs/kernfs/dir.c                               |   2 +-
+ fs/kernfs/mount.c                             |   2 +-
+ fs/libfs.c                                    |   4 +-
+ fs/mbcache.c                                  |   4 +-
+ fs/namei.c                                    |   6 +-
+ fs/namespace.c                                |  10 +-
+ fs/pipe.c                                     |   6 +-
+ fs/posix_acl.c                                |   2 +-
+ fs/read_write.c                               |   4 +-
+ fs/select.c                                   |   4 +-
+ fs/seq_file.c                                 |   4 +-
+ fs/signalfd.c                                 |   2 +-
+ fs/splice.c                                   |  10 +-
+ fs/timerfd.c                                  |   2 +-
+ fs/userfaultfd.c                              |  10 +-
+ fs/xattr.c                                    |   2 +-
+ include/linux/cof.h                           |  17 +
+ include/linux/cof_types.h                     |  21 +
+ include/linux/gfp.h                           |   7 +-
+ include/linux/migrate_ptpages.h               |  14 +
+ include/linux/page-flags.h                    |   3 +
+ include/linux/slab.h                          |  17 +-
+ include/linux/vmalloc.h                       |  32 ++
+ include/net/request_sock.h                    |   2 +-
+ include/trace/events/mmflags.h                |   8 +-
+ init/main.c                                   |   1 +
+ kernel/audit.c                                |   4 +-
+ kernel/cred.c                                 |   8 +-
+ kernel/fork.c                                 |  26 +-
+ kernel/pid_namespace.c                        |   4 +-
+ kernel/time/posix-timers.c                    |   4 +-
+ kernel/user.c                                 |   4 +-
+ lib/radix-tree.c                              |   8 +-
+ lib/xarray.c                                  |   8 +-
+ mm/Kconfig                                    |   2 +
+ mm/Makefile                                   |   3 +
+ mm/cma.c                                      |   2 +-
+ mm/cof.c                                      | 120 +++++
+ mm/cof_util.c                                 | 100 +++++
+ mm/hugetlb.c                                  |  16 +-
+ mm/internal.h                                 |   2 +-
+ mm/list_lru.c                                 |  32 +-
+ mm/memory.c                                   |  21 +-
+ mm/migrate_ptpages.c                          |  83 ++++
+ mm/page_alloc.c                               |  21 +-
+ mm/slab.h                                     |   8 +-
+ mm/slab_common.c                              |  40 +-
+ mm/slub.c                                     | 102 +++--
+ mm/util.c                                     |   3 +
+ mm/vmalloc.c                                  | 412 ++++++++++++++++--
+ net/core/skbuff.c                             |  12 +-
+ net/core/sock.c                               |   8 +-
+ net/ipv4/fib_trie.c                           |  13 +-
+ net/ipv4/inet_timewait_sock.c                 |   2 +-
+ 80 files changed, 1190 insertions(+), 292 deletions(-)
+ create mode 100644 include/linux/cof.h
+ create mode 100644 include/linux/cof_types.h
+ create mode 100644 include/linux/migrate_ptpages.h
+ create mode 100644 mm/cof.c
+ create mode 100644 mm/cof_util.c
+ create mode 100644 mm/migrate_ptpages.c
+
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 28c492be0a57..7ead0efdfb7d 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -5989,7 +5989,7 @@ struct ata_port *ata_port_alloc(struct ata_host *host)
+ 
+ 	DPRINTK("ENTER\n");
+ 
+-	ap = kzalloc(sizeof(*ap), GFP_KERNEL);
++	ap = kzalloc(sizeof(*ap), GFP_KERNEL|___GFP_COF);
+ 	if (!ap)
+ 		return NULL;
+ 
+@@ -6108,7 +6108,7 @@ struct ata_host *ata_host_alloc(struct device *dev, int max_ports)
+ 
+ 	/* alloc a container for our list of ATA ports (buses) */
+ 	sz = sizeof(struct ata_host) + (max_ports + 1) * sizeof(void *);
+-	host = kzalloc(sz, GFP_KERNEL);
++	host = kzalloc(sz, GFP_KERNEL|___GFP_COF);
+ 	if (!host)
+ 		return NULL;
+ 
+diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+index e6fd079783bd..00fc763c896a 100644
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -33,7 +33,9 @@
+ #include "edac_mc.h"
+ #include "edac_module.h"
+ #include <ras/ras_event.h>
+-
++#include <linux/cof.h>
++#include <linux/mm.h>
++#include <linux/freezer.h>
+ #ifdef CONFIG_EDAC_ATOMIC_SCRUB
+ #include <asm/edac.h>
+ #else
+@@ -1096,7 +1098,8 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+ 	int i, n_labels = 0;
+ 	u8 grain_bits;
+ 	struct edac_raw_error_desc *e = &mci->error_desc;
+-
++	struct page *vuln_page;
++	
+ 	edac_dbg(3, "MC%d\n", mci->mc_idx);
+ 
+ 	/* Fills the error report buffer */
+@@ -1248,6 +1251,24 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+ 			       (e->page_frame_number << PAGE_SHIFT) | e->offset_in_page,
+ 			       grain_bits, e->syndrome, e->other_detail);
+ 
++	if(type == HW_EVENT_ERR_CORRECTED){
++	vuln_page = pfn_to_page(page_frame_number);
++	if(unlikely(vuln_page == NULL)) {
++		pr_err("[COF EDAC] Cannot get page from pfn\n");
++	}
++	
++	if(test_bit(PG_flip, &vuln_page->flags)) {
++		freeze_processes();
++		bitflip_migrate(page_frame_number);
++		SetPageHWPoison(vuln_page);
++		pr_info("[COF EDAC] Page @PFN %#lx  already has PG_flip set -> Migrating and Poisoning Page\n", page_frame_number);
++		thaw_processes();
++	}
++	else {
++		set_bit(PG_flip, &vuln_page->flags);
++		pr_info("[COF EDAC] Page @PFN %#lx had correctable error, possible templating -> Setting PG_flip\n", page_frame_number);
++	}
++	}
+ 	edac_raw_mc_handle_error(type, mci, e);
+ }
+ EXPORT_SYMBOL_GPL(edac_mc_handle_error);
+diff --git a/drivers/net/ethernet/mellanox/mlx5/core/alloc.c b/drivers/net/ethernet/mellanox/mlx5/core/alloc.c
+index 549f962cd86e..a9b118844410 100644
+--- a/drivers/net/ethernet/mellanox/mlx5/core/alloc.c
++++ b/drivers/net/ethernet/mellanox/mlx5/core/alloc.c
+@@ -81,9 +81,9 @@ int mlx5_buf_alloc_node(struct mlx5_core_dev *dev, int size,
+ 	buf->page_shift   = (u8)get_order(size) + PAGE_SHIFT;
+ 
+ 	buf->frags = kzalloc(sizeof(*buf->frags), GFP_KERNEL);
++	
+ 	if (!buf->frags)
+ 		return -ENOMEM;
+-
+ 	buf->frags->buf   = mlx5_dma_zalloc_coherent_node(dev, size,
+ 							  &t, node);
+ 	if (!buf->frags->buf)
+@@ -186,7 +186,7 @@ static struct mlx5_db_pgdir *mlx5_alloc_db_pgdir(struct mlx5_core_dev *dev,
+ 	pgdir = kzalloc(sizeof(*pgdir), GFP_KERNEL);
+ 	if (!pgdir)
+ 		return NULL;
+-
++	
+ 	pgdir->bitmap = bitmap_zalloc(db_per_page, GFP_KERNEL);
+ 	if (!pgdir->bitmap) {
+ 		kfree(pgdir);
+diff --git a/drivers/net/ethernet/mellanox/mlx5/core/fs_core.c b/drivers/net/ethernet/mellanox/mlx5/core/fs_core.c
+index 791e14ac26f4..6b9591161d55 100644
+--- a/drivers/net/ethernet/mellanox/mlx5/core/fs_core.c
++++ b/drivers/net/ethernet/mellanox/mlx5/core/fs_core.c
+@@ -620,10 +620,10 @@ static struct fs_fte *alloc_fte(struct mlx5_flow_table *ft,
+ 	struct mlx5_flow_steering *steering = get_steering(&ft->node);
+ 	struct fs_fte *fte;
+ 
+-	fte = kmem_cache_zalloc(steering->ftes_cache, GFP_KERNEL);
++	fte = kmem_cache_zalloc(steering->ftes_cache, GFP_KERNEL|___GFP_COF);
+ 	if (!fte)
+ 		return ERR_PTR(-ENOMEM);
+-
++	pr_info("COF mlx\n");
+ 	memcpy(fte->val, &spec->match_value, sizeof(fte->val));
+ 	fte->node.type =  FS_TYPE_FLOW_ENTRY;
+ 	fte->action = *flow_act;
+@@ -650,10 +650,10 @@ static struct mlx5_flow_group *alloc_flow_group(struct mlx5_flow_steering *steer
+ 	struct mlx5_flow_group *fg;
+ 	int ret;
+ 
+-	fg = kmem_cache_zalloc(steering->fgs_cache, GFP_KERNEL);
++	fg = kmem_cache_zalloc(steering->fgs_cache, GFP_KERNEL|___GFP_COF);
+ 	if (!fg)
+ 		return ERR_PTR(-ENOMEM);
+-
++	pr_info("COF mlx\n");
+ 	ret = rhashtable_init(&fg->ftes_hash, &rhash_fte);
+ 	if (ret) {
+ 		kmem_cache_free(steering->fgs_cache, fg);
+@@ -2746,9 +2746,9 @@ int mlx5_init_fs(struct mlx5_core_dev *dev)
+ 
+ 	steering->fgs_cache = kmem_cache_create("mlx5_fs_fgs",
+ 						sizeof(struct mlx5_flow_group), 0,
+-						0, NULL);
++						SLAB_HWCACHE_ALIGN|SLAB_COF, NULL);
+ 	steering->ftes_cache = kmem_cache_create("mlx5_fs_ftes", sizeof(struct fs_fte), 0,
+-						 0, NULL);
++						 SLAB_HWCACHE_ALIGN|SLAB_COF, NULL);
+ 	if (!steering->ftes_cache || !steering->fgs_cache) {
+ 		err = -ENOMEM;
+ 		goto err;
+diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+index 867c7ebd3f10..14218bd081c1 100644
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -402,11 +402,10 @@ static struct vring_desc *alloc_indirect_split(struct virtqueue *_vq,
+ 	 * virtqueue.
+ 	 */
+ 	gfp &= ~__GFP_HIGHMEM;
+-
+ 	desc = kmalloc_array(total_sg, sizeof(struct vring_desc), gfp);
+ 	if (!desc)
+ 		return NULL;
+-
++	//pr_info("alloc_indirect_split(): cof -- %d\n", is_vmalloc_addr(desc));
+ 	for (i = 0; i < total_sg; i++)
+ 		desc[i].next = cpu_to_virtio16(_vq->vdev, i + 1);
+ 	return desc;
+@@ -972,7 +971,7 @@ static struct vring_packed_desc *alloc_indirect_packed(unsigned int total_sg,
+ 	gfp &= ~__GFP_HIGHMEM;
+ 
+ 	desc = kmalloc_array(total_sg, sizeof(struct vring_packed_desc), gfp);
+-
++	pr_info("alloc_indirect_packed() -- cof\n");
+ 	return desc;
+ }
+ 
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index c5642bcb6b46..6e7daa0935d3 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -434,7 +434,7 @@ static struct elf_phdr *load_elf_phdrs(const struct elfhdr *elf_ex,
+ 	if (size == 0 || size > 65536 || size > ELF_MIN_ALIGN)
+ 		goto out;
+ 
+-	elf_phdata = kmalloc(size, GFP_KERNEL);
++	elf_phdata = kmalloc(size, GFP_KERNEL|___GFP_COF);
+ 	if (!elf_phdata)
+ 		goto out;
+ 
+@@ -692,7 +692,7 @@ static int load_elf_binary(struct linux_binprm *bprm)
+ 	struct arch_elf_state arch_state = INIT_ARCH_ELF_STATE;
+ 	struct pt_regs *regs;
+ 
+-	loc = kmalloc(sizeof(*loc), GFP_KERNEL);
++	loc = kmalloc(sizeof(*loc), GFP_KERNEL|___GFP_COF);
+ 	if (!loc) {
+ 		retval = -ENOMEM;
+ 		goto out_ret;
+@@ -736,7 +736,7 @@ static int load_elf_binary(struct linux_binprm *bprm)
+ 			goto out_free_ph;
+ 
+ 		retval = -ENOMEM;
+-		elf_interpreter = kmalloc(elf_ppnt->p_filesz, GFP_KERNEL);
++		elf_interpreter = kmalloc(elf_ppnt->p_filesz, GFP_KERNEL|___GFP_COF);
+ 		if (!elf_interpreter)
+ 			goto out_free_ph;
+ 
+@@ -1202,7 +1202,7 @@ static int load_elf_library(struct file *file)
+ 	/* j < ELF_MIN_ALIGN because elf_ex.e_phnum <= 2 */
+ 
+ 	error = -ENOMEM;
+-	elf_phdata = kmalloc(j, GFP_KERNEL);
++	elf_phdata = kmalloc(j, GFP_KERNEL|___GFP_COF);
+ 	if (!elf_phdata)
+ 		goto out;
+ 
+@@ -1731,7 +1731,7 @@ static int fill_thread_core_info(struct elf_thread_core_info *t,
+ 		    (!regset->active || regset->active(t->task, regset) > 0)) {
+ 			int ret;
+ 			size_t size = regset_size(t->task, regset);
+-			void *data = kmalloc(size, GFP_KERNEL);
++			void *data = kmalloc(size, GFP_KERNEL|___GFP_COF);
+ 			if (unlikely(!data))
+ 				return 0;
+ 			ret = regset->get(t->task, regset,
+@@ -1771,7 +1771,7 @@ static int fill_note_info(struct elfhdr *elf, int phdrs,
+ 	info->size = 0;
+ 	info->thread = NULL;
+ 
+-	psinfo = kmalloc(sizeof(*psinfo), GFP_KERNEL);
++	psinfo = kmalloc(sizeof(*psinfo), GFP_KERNEL|___GFP_COF);
+ 	if (psinfo == NULL) {
+ 		info->psinfo.data = NULL; /* So we don't free this wrongly */
+ 		return 0;
+@@ -1809,7 +1809,7 @@ static int fill_note_info(struct elfhdr *elf, int phdrs,
+ 	for (ct = &dump_task->mm->core_state->dumper; ct; ct = ct->next) {
+ 		t = kzalloc(offsetof(struct elf_thread_core_info,
+ 				     notes[info->thread_notes]),
+-			    GFP_KERNEL);
++			    GFP_KERNEL|___GFP_COF);
+ 		if (unlikely(!t))
+ 			return 0;
+ 
+@@ -1986,20 +1986,20 @@ static int elf_note_info_init(struct elf_note_info *info)
+ 	INIT_LIST_HEAD(&info->thread_list);
+ 
+ 	/* Allocate space for ELF notes */
+-	info->notes = kmalloc_array(8, sizeof(struct memelfnote), GFP_KERNEL);
++	info->notes = kmalloc_array(8, sizeof(struct memelfnote), GFP_KERNEL|___GFP_COF);
+ 	if (!info->notes)
+ 		return 0;
+-	info->psinfo = kmalloc(sizeof(*info->psinfo), GFP_KERNEL);
++	info->psinfo = kmalloc(sizeof(*info->psinfo), GFP_KERNEL|___GFP_COF);
+ 	if (!info->psinfo)
+ 		return 0;
+-	info->prstatus = kmalloc(sizeof(*info->prstatus), GFP_KERNEL);
++	info->prstatus = kmalloc(sizeof(*info->prstatus), GFP_KERNEL|___GFP_COF);
+ 	if (!info->prstatus)
+ 		return 0;
+-	info->fpu = kmalloc(sizeof(*info->fpu), GFP_KERNEL);
++	info->fpu = kmalloc(sizeof(*info->fpu), GFP_KERNEL|___GFP_COF);
+ 	if (!info->fpu)
+ 		return 0;
+ #ifdef ELF_CORE_COPY_XFPREGS
+-	info->xfpu = kmalloc(sizeof(*info->xfpu), GFP_KERNEL);
++	info->xfpu = kmalloc(sizeof(*info->xfpu), GFP_KERNEL|___GFP_COF);
+ 	if (!info->xfpu)
+ 		return 0;
+ #endif
+@@ -2018,7 +2018,7 @@ static int fill_note_info(struct elfhdr *elf, int phdrs,
+ 
+ 	for (ct = current->mm->core_state->dumper.next;
+ 					ct; ct = ct->next) {
+-		ets = kzalloc(sizeof(*ets), GFP_KERNEL);
++		ets = kzalloc(sizeof(*ets), GFP_KERNEL|___GFP_COF);
+ 		if (!ets)
+ 			return 0;
+ 
+@@ -2210,7 +2210,7 @@ static int elf_core_dump(struct coredump_params *cprm)
+ 	 */
+   
+ 	/* alloc memory for large data structures: too large to be on stack */
+-	elf = kmalloc(sizeof(*elf), GFP_KERNEL);
++	elf = kmalloc(sizeof(*elf), GFP_KERNEL|___GFP_COF);
+ 	if (!elf)
+ 		goto out;
+ 	/*
+@@ -2253,7 +2253,7 @@ static int elf_core_dump(struct coredump_params *cprm)
+ 
+ 		sz += elf_coredump_extra_notes_size();
+ 
+-		phdr4note = kmalloc(sizeof(*phdr4note), GFP_KERNEL);
++		phdr4note = kmalloc(sizeof(*phdr4note), GFP_KERNEL|___GFP_COF);
+ 		if (!phdr4note)
+ 			goto end_coredump;
+ 
+@@ -2265,8 +2265,8 @@ static int elf_core_dump(struct coredump_params *cprm)
+ 
+ 	if (segs - 1 > ULONG_MAX / sizeof(*vma_filesz))
+ 		goto end_coredump;
+-	vma_filesz = kvmalloc(array_size(sizeof(*vma_filesz), (segs - 1)),
+-			      GFP_KERNEL);
++	vma_filesz = kmalloc(array_size(sizeof(*vma_filesz), (segs - 1)),
++			      GFP_KERNEL|___GFP_COF);
+ 	if (ZERO_OR_NULL_PTR(vma_filesz))
+ 		goto end_coredump;
+ 
+@@ -2284,7 +2284,7 @@ static int elf_core_dump(struct coredump_params *cprm)
+ 	e_shoff = offset;
+ 
+ 	if (e_phnum == PN_XNUM) {
+-		shdr4extnum = kmalloc(sizeof(*shdr4extnum), GFP_KERNEL);
++		shdr4extnum = kmalloc(sizeof(*shdr4extnum), GFP_KERNEL|___GFP_COF);
+ 		if (!shdr4extnum)
+ 			goto end_coredump;
+ 		fill_extnum_info(elf, shdr4extnum, e_shoff, segs);
+@@ -2374,7 +2374,7 @@ static int elf_core_dump(struct coredump_params *cprm)
+ cleanup:
+ 	free_note_info(&info);
+ 	kfree(shdr4extnum);
+-	kvfree(vma_filesz);
++	kfree(vma_filesz);
+ 	kfree(phdr4note);
+ 	kfree(elf);
+ out:
+diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
+index d86ebd0dcc3d..e0946f4d3ee0 100644
+--- a/fs/binfmt_elf_fdpic.c
++++ b/fs/binfmt_elf_fdpic.c
+@@ -149,7 +149,7 @@ static int elf_fdpic_fetch_phdrs(struct elf_fdpic_params *params,
+ 		return -ENOMEM;
+ 
+ 	size = params->hdr.e_phnum * sizeof(struct elf_phdr);
+-	params->phdrs = kmalloc(size, GFP_KERNEL);
++	params->phdrs = kmalloc(size, GFP_KERNEL|___GFP_COF);
+ 	if (!params->phdrs)
+ 		return -ENOMEM;
+ 
+@@ -239,7 +239,7 @@ static int load_elf_fdpic_binary(struct linux_binprm *bprm)
+ 				goto error;
+ 
+ 			/* read the name of the interpreter into memory */
+-			interpreter_name = kmalloc(phdr->p_filesz, GFP_KERNEL);
++			interpreter_name = kmalloc(phdr->p_filesz, GFP_KERNEL|___GFP_COF);
+ 			if (!interpreter_name)
+ 				goto error;
+ 
+@@ -751,7 +751,7 @@ static int elf_fdpic_map_file(struct elf_fdpic_params *params,
+ 		return -ELIBBAD;
+ 
+ 	size = sizeof(*loadmap) + nloads * sizeof(*seg);
+-	loadmap = kzalloc(size, GFP_KERNEL);
++	loadmap = kzalloc(size, GFP_KERNEL|___GFP_COF);
+ 	if (!loadmap)
+ 		return -ENOMEM;
+ 
+@@ -1587,20 +1587,20 @@ static int elf_fdpic_core_dump(struct coredump_params *cprm)
+ 	 */
+ 
+ 	/* alloc memory for large data structures: too large to be on stack */
+-	elf = kmalloc(sizeof(*elf), GFP_KERNEL);
++	elf = kmalloc(sizeof(*elf), GFP_KERNEL|___GFP_COF);
+ 	if (!elf)
+ 		goto cleanup;
+-	prstatus = kzalloc(sizeof(*prstatus), GFP_KERNEL);
++	prstatus = kzalloc(sizeof(*prstatus), GFP_KERNEL|___GFP_COF);
+ 	if (!prstatus)
+ 		goto cleanup;
+-	psinfo = kmalloc(sizeof(*psinfo), GFP_KERNEL);
++	psinfo = kmalloc(sizeof(*psinfo), GFP_KERNEL|___GFP_COF);
+ 	if (!psinfo)
+ 		goto cleanup;
+ 	notes = kmalloc_array(NUM_NOTES, sizeof(struct memelfnote),
+ 			      GFP_KERNEL);
+ 	if (!notes)
+ 		goto cleanup;
+-	fpu = kmalloc(sizeof(*fpu), GFP_KERNEL);
++	fpu = kmalloc(sizeof(*fpu), GFP_KERNEL|___GFP_COF);
+ 	if (!fpu)
+ 		goto cleanup;
+ #ifdef ELF_CORE_COPY_XFPREGS
+@@ -1611,7 +1611,7 @@ static int elf_fdpic_core_dump(struct coredump_params *cprm)
+ 
+ 	for (ct = current->mm->core_state->dumper.next;
+ 					ct; ct = ct->next) {
+-		tmp = kzalloc(sizeof(*tmp), GFP_KERNEL);
++		tmp = kzalloc(sizeof(*tmp), GFP_KERNEL|___GFP_COF);
+ 		if (!tmp)
+ 			goto cleanup;
+ 
+@@ -1693,7 +1693,7 @@ static int elf_fdpic_core_dump(struct coredump_params *cprm)
+ 
+ 		sz += thread_status_size;
+ 
+-		phdr4note = kmalloc(sizeof(*phdr4note), GFP_KERNEL);
++		phdr4note = kmalloc(sizeof(*phdr4note), GFP_KERNEL|___GFP_COF);
+ 		if (!phdr4note)
+ 			goto end_coredump;
+ 
+@@ -1709,7 +1709,7 @@ static int elf_fdpic_core_dump(struct coredump_params *cprm)
+ 	e_shoff = offset;
+ 
+ 	if (e_phnum == PN_XNUM) {
+-		shdr4extnum = kmalloc(sizeof(*shdr4extnum), GFP_KERNEL);
++		shdr4extnum = kmalloc(sizeof(*shdr4extnum), GFP_KERNEL|___GFP_COF);
+ 		if (!shdr4extnum)
+ 			goto end_coredump;
+ 		fill_extnum_info(elf, shdr4extnum, e_shoff, segs);
+diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
+index cdb45829354d..f2bc4e01cb20 100644
+--- a/fs/binfmt_misc.c
++++ b/fs/binfmt_misc.c
+@@ -334,7 +334,7 @@ static Node *create_entry(const char __user *buffer, size_t count)
+ 
+ 	err = -ENOMEM;
+ 	memsize = sizeof(Node) + count + 8;
+-	e = kmalloc(memsize, GFP_KERNEL);
++	e = kmalloc(memsize, GFP_KERNEL | ___GFP_COF);
+ 	if (!e)
+ 		goto out;
+ 
+@@ -446,7 +446,7 @@ static Node *create_entry(const char __user *buffer, size_t count)
+ 
+ 			if (e->mask) {
+ 				int i;
+-				char *masked = kmalloc(e->size, GFP_KERNEL);
++				char *masked = kmalloc(e->size, GFP_KERNEL | ___GFP_COF);
+ 
+ 				print_hex_dump_bytes(
+ 					KBUILD_MODNAME ": register:  mask[decoded]: ",
+diff --git a/fs/char_dev.c b/fs/char_dev.c
+index 00dfe17871ac..1feef8ebba25 100644
+--- a/fs/char_dev.c
++++ b/fs/char_dev.c
+@@ -113,7 +113,7 @@ __register_chrdev_region(unsigned int major, unsigned int baseminor,
+ 		return ERR_PTR(-EINVAL);
+ 	}
+ 
+-	cd = kzalloc(sizeof(struct char_device_struct), GFP_KERNEL);
++	cd = kzalloc(sizeof(struct char_device_struct), GFP_KERNEL | ___GFP_COF);
+ 	if (cd == NULL)
+ 		return ERR_PTR(-ENOMEM);
+ 
+@@ -629,7 +629,7 @@ static struct kobj_type ktype_cdev_dynamic = {
+  */
+ struct cdev *cdev_alloc(void)
+ {
+-	struct cdev *p = kzalloc(sizeof(struct cdev), GFP_KERNEL);
++	struct cdev *p = kzalloc(sizeof(struct cdev), GFP_KERNEL | ___GFP_COF);
+ 	if (p) {
+ 		INIT_LIST_HEAD(&p->list);
+ 		kobject_init(&p->kobj, &ktype_cdev_dynamic);
+diff --git a/fs/coredump.c b/fs/coredump.c
+index b1ea7dfbd149..dacff2ea07e3 100644
+--- a/fs/coredump.c
++++ b/fs/coredump.c
+@@ -163,7 +163,7 @@ static int cn_print_exe_file(struct core_name *cn)
+ 	if (!exe_file)
+ 		return cn_esc_printf(cn, "%s (path unknown)", current->comm);
+ 
+-	pathbuf = kmalloc(PATH_MAX, GFP_KERNEL);
++	pathbuf = kmalloc(PATH_MAX, GFP_KERNEL | ___GFP_COF);
+ 	if (!pathbuf) {
+ 		ret = -ENOMEM;
+ 		goto put_exe_file;
+@@ -206,7 +206,7 @@ static int format_corename(struct core_name *cn, struct coredump_params *cprm,
+ 
+ 	if (ispipe) {
+ 		int argvs = sizeof(core_pattern) / 2;
+-		(*argv) = kmalloc_array(argvs, sizeof(**argv), GFP_KERNEL);
++		(*argv) = kmalloc_array(argvs, sizeof(**argv), GFP_KERNEL | ___GFP_COF);
+ 		if (!(*argv))
+ 			return -ENOMEM;
+ 		(*argv)[(*argc)++] = 0;
+@@ -667,7 +667,7 @@ void do_coredump(const kernel_siginfo_t *siginfo)
+ 		}
+ 
+ 		helper_argv = kmalloc_array(argc + 1, sizeof(*helper_argv),
+-					    GFP_KERNEL);
++					    GFP_KERNEL | ___GFP_COF);
+ 		if (!helper_argv) {
+ 			printk(KERN_WARNING "%s failed to allocate memory\n",
+ 			       __func__);
+diff --git a/fs/dcache.c b/fs/dcache.c
+index e88cf0554e65..0db073410fb7 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1685,7 +1685,7 @@ struct dentry *__d_alloc(struct super_block *sb, const struct qstr *name)
+ 	char *dname;
+ 	int err;
+ 
+-	dentry = kmem_cache_alloc(dentry_cache, GFP_KERNEL);
++	dentry = kmem_cache_alloc(dentry_cache, GFP_KERNEL | ___GFP_COF);
+ 	if (!dentry)
+ 		return NULL;
+ 
+@@ -1703,7 +1703,7 @@ struct dentry *__d_alloc(struct super_block *sb, const struct qstr *name)
+ 		size_t size = offsetof(struct external_name, name[1]);
+ 		struct external_name *p = kmalloc(size + name->len,
+ 						  GFP_KERNEL_ACCOUNT |
+-						  __GFP_RECLAIMABLE);
++						  __GFP_RECLAIMABLE | ___GFP_COF);
+ 		if (!p) {
+ 			kmem_cache_free(dentry_cache, dentry); 
+ 			return NULL;
+@@ -3166,7 +3166,7 @@ static void __init dcache_init(void)
+ 	 * of the dcache.
+ 	 */
+ 	dentry_cache = KMEM_CACHE_USERCOPY(dentry,
+-		SLAB_RECLAIM_ACCOUNT|SLAB_PANIC|SLAB_MEM_SPREAD|SLAB_ACCOUNT,
++		SLAB_RECLAIM_ACCOUNT|SLAB_PANIC|SLAB_MEM_SPREAD|SLAB_ACCOUNT|SLAB_COF,
+ 		d_iname);
+ 
+ 	/* Hash may have been set up in dcache_init_early */
+diff --git a/fs/dcookies.c b/fs/dcookies.c
+index 6eeb61100a09..b8627d78c35b 100644
+--- a/fs/dcookies.c
++++ b/fs/dcookies.c
+@@ -94,7 +94,7 @@ static void hash_dcookie(struct dcookie_struct * dcs)
+ static struct dcookie_struct *alloc_dcookie(const struct path *path)
+ {
+ 	struct dcookie_struct *dcs = kmem_cache_alloc(dcookie_cache,
+-							GFP_KERNEL);
++							GFP_KERNEL | ___GFP_COF);
+ 	struct dentry *d;
+ 	if (!dcs)
+ 		return NULL;
+@@ -173,7 +173,7 @@ static int do_lookup_dcookie(u64 cookie64, char __user *buf, size_t len)
+ 		goto out;
+ 
+ 	err = -ENOMEM;
+-	kbuf = kmalloc(PAGE_SIZE, GFP_KERNEL);
++	kbuf = kmalloc(PAGE_SIZE, GFP_KERNEL | ___GFP_COF);
+ 	if (!kbuf)
+ 		goto out;
+ 
+@@ -228,12 +228,12 @@ static int dcookie_init(void)
+ 
+ 	dcookie_cache = kmem_cache_create("dcookie_cache",
+ 		sizeof(struct dcookie_struct),
+-		0, 0, NULL);
++		0, SLAB_HWCACHE_ALIGN | SLAB_COF, NULL);
+ 
+ 	if (!dcookie_cache)
+ 		goto out;
+ 
+-	dcookie_hashtable = kmalloc(PAGE_SIZE, GFP_KERNEL);
++	dcookie_hashtable = kmalloc(PAGE_SIZE, GFP_KERNEL | ___GFP_COF);
+ 	if (!dcookie_hashtable)
+ 		goto out_kmem;
+ 
+@@ -319,7 +319,7 @@ struct dcookie_user * dcookie_register(void)
+ 
+ 	mutex_lock(&dcookie_mutex);
+ 
+-	user = kmalloc(sizeof(struct dcookie_user), GFP_KERNEL);
++	user = kmalloc(sizeof(struct dcookie_user), GFP_KERNEL | ___GFP_COF);
+ 	if (!user)
+ 		goto out;
+ 
+diff --git a/fs/eventfd.c b/fs/eventfd.c
+index 8aa0ea8c55e8..b0b5f77a88b9 100644
+--- a/fs/eventfd.c
++++ b/fs/eventfd.c
+@@ -400,7 +400,7 @@ static int do_eventfd(unsigned int count, int flags)
+ 	if (flags & ~EFD_FLAGS_SET)
+ 		return -EINVAL;
+ 
+-	ctx = kmalloc(sizeof(*ctx), GFP_KERNEL);
++	ctx = kmalloc(sizeof(*ctx), GFP_KERNEL | ___GFP_COF);
+ 	if (!ctx)
+ 		return -ENOMEM;
+ 
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index c4159bcc05d9..77137595be9d 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -1018,7 +1018,7 @@ static int ep_alloc(struct eventpoll **pep)
+ 
+ 	user = get_current_user();
+ 	error = -ENOMEM;
+-	ep = kzalloc(sizeof(*ep), GFP_KERNEL);
++	ep = kzalloc(sizeof(*ep), GFP_KERNEL | ___GFP_COF);
+ 	if (unlikely(!ep))
+ 		goto free_uid;
+ 
+diff --git a/fs/exec.c b/fs/exec.c
+index c27231234764..05043d0c6b60 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1747,7 +1747,7 @@ static int __do_execve_file(int fd, struct filename *filename,
+ 		goto out_ret;
+ 
+ 	retval = -ENOMEM;
+-	bprm = kzalloc(sizeof(*bprm), GFP_KERNEL);
++	bprm = kzalloc(sizeof(*bprm), GFP_KERNEL | ___GFP_COF);
+ 	if (!bprm)
+ 		goto out_files;
+ 
+diff --git a/fs/ext4/dir.c b/fs/ext4/dir.c
+index 9fdd2b269d61..b33a34239c6e 100644
+--- a/fs/ext4/dir.c
++++ b/fs/ext4/dir.c
+@@ -413,7 +413,7 @@ static struct dir_private_info *ext4_htree_create_dir_info(struct file *filp,
+ {
+ 	struct dir_private_info *p;
+ 
+-	p = kzalloc(sizeof(*p), GFP_KERNEL);
++	p = kzalloc(sizeof(*p), GFP_KERNEL|___GFP_COF);
+ 	if (!p)
+ 		return NULL;
+ 	p->curr_hash = pos2maj_hash(filp, pos);
+@@ -449,7 +449,7 @@ int ext4_htree_store_dirent(struct file *dir_file, __u32 hash,
+ 
+ 	/* Create and allocate the fname structure */
+ 	len = sizeof(struct fname) + ent_name->len + 1;
+-	new_fn = kzalloc(len, GFP_KERNEL);
++	new_fn = kzalloc(len, GFP_KERNEL|___GFP_COF);
+ 	if (!new_fn)
+ 		return -ENOMEM;
+ 	new_fn->hash = hash;
+diff --git a/fs/ext4/hash.c b/fs/ext4/hash.c
+index 3e133793a5a3..854167c23f70 100644
+--- a/fs/ext4/hash.c
++++ b/fs/ext4/hash.c
+@@ -281,7 +281,7 @@ int ext4fs_dirhash(const struct inode *dir, const char *name, int len,
+ 	struct qstr qstr = {.name = name, .len = len };
+ 
+ 	if (len && IS_CASEFOLDED(dir) && um) {
+-		buff = kzalloc(sizeof(char) * PATH_MAX, GFP_KERNEL);
++		buff = kzalloc(sizeof(char) * PATH_MAX, GFP_KERNEL|___GFP_COF);
+ 		if (!buff)
+ 			return -ENOMEM;
+ 
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index a3e2767bdf2f..6c741c45f483 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -2413,7 +2413,7 @@ int ext4_mb_add_groupinfo(struct super_block *sb, ext4_group_t group,
+ 		sbi->s_group_info[group >> EXT4_DESC_PER_BLOCK_BITS(sb)];
+ 	i = group & (EXT4_DESC_PER_BLOCK(sb) - 1);
+ 
+-	meta_group_info[i] = kmem_cache_zalloc(cachep, GFP_NOFS);
++	meta_group_info[i] = kmem_cache_zalloc(cachep, GFP_NOFS|___GFP_COF);
+ 	if (meta_group_info[i] == NULL) {
+ 		ext4_msg(sb, KERN_ERR, "can't allocate buddy mem");
+ 		goto exit_group_info;
+@@ -2549,7 +2549,7 @@ static int ext4_groupinfo_create_slab(size_t size)
+ 				bb_counters[blocksize_bits + 2]);
+ 
+ 	cachep = kmem_cache_create(ext4_groupinfo_slab_names[cache_index],
+-					slab_size, 0, SLAB_RECLAIM_ACCOUNT,
++					slab_size, 0, SLAB_RECLAIM_ACCOUNT|SLAB_COF,
+ 					NULL);
+ 
+ 	ext4_groupinfo_caches[cache_index] = cachep;
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index dd654e53ba3d..adb95f3ca004 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -209,8 +209,14 @@ void *ext4_kvmalloc(size_t size, gfp_t flags)
+ 	void *ret;
+ 
+ 	ret = kmalloc(size, flags | __GFP_NOWARN);
++	ret = NULL;
+ 	if (!ret)
+ 		ret = __vmalloc(size, flags, PAGE_KERNEL);
++	if(ret)
++		pr_info("COF super\n");
++	else{
++		pr_err("mhhh\n");
++	}
+ 	return ret;
+ }
+ 
+@@ -219,8 +225,14 @@ void *ext4_kvzalloc(size_t size, gfp_t flags)
+ 	void *ret;
+ 
+ 	ret = kzalloc(size, flags | __GFP_NOWARN);
++	ret = NULL;
+ 	if (!ret)
+ 		ret = __vmalloc(size, flags | __GFP_ZERO, PAGE_KERNEL);
++	if(ret)
++		pr_info("COF super\n");
++	else{
++		pr_err("mhhh\n");
++	}
+ 	return ret;
+ }
+ 
+@@ -1070,7 +1082,7 @@ static struct inode *ext4_alloc_inode(struct super_block *sb)
+ {
+ 	struct ext4_inode_info *ei;
+ 
+-	ei = kmem_cache_alloc(ext4_inode_cachep, GFP_NOFS);
++	ei = kmem_cache_alloc(ext4_inode_cachep, GFP_NOFS | ___GFP_COF);
+ 	if (!ei)
+ 		return NULL;
+ 
+@@ -1149,7 +1161,7 @@ static int __init init_inodecache(void)
+ 	ext4_inode_cachep = kmem_cache_create_usercopy("ext4_inode_cache",
+ 				sizeof(struct ext4_inode_info), 0,
+ 				(SLAB_RECLAIM_ACCOUNT|SLAB_MEM_SPREAD|
+-					SLAB_ACCOUNT),
++					SLAB_ACCOUNT|SLAB_COF),
+ 				offsetof(struct ext4_inode_info, i_data),
+ 				sizeof_field(struct ext4_inode_info, i_data),
+ 				init_once);
+@@ -3265,7 +3277,7 @@ static int ext4_li_info_new(void)
+ {
+ 	struct ext4_lazy_init *eli = NULL;
+ 
+-	eli = kzalloc(sizeof(*eli), GFP_KERNEL);
++	eli = kzalloc(sizeof(*eli), GFP_KERNEL|___GFP_COF);
+ 	if (!eli)
+ 		return -ENOMEM;
+ 
+@@ -3285,7 +3297,7 @@ static struct ext4_li_request *ext4_li_request_new(struct super_block *sb,
+ 	struct ext4_sb_info *sbi = EXT4_SB(sb);
+ 	struct ext4_li_request *elr;
+ 
+-	elr = kzalloc(sizeof(*elr), GFP_KERNEL);
++	elr = kzalloc(sizeof(*elr), GFP_KERNEL|___GFP_COF);
+ 	if (!elr)
+ 		return NULL;
+ 
+@@ -3618,7 +3630,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 	char *orig_data = kstrdup(data, GFP_KERNEL);
+ 	struct buffer_head *bh;
+ 	struct ext4_super_block *es = NULL;
+-	struct ext4_sb_info *sbi = kzalloc(sizeof(*sbi), GFP_KERNEL);
++	struct ext4_sb_info *sbi = kzalloc(sizeof(*sbi), GFP_KERNEL|___GFP_COF);
+ 	ext4_fsblk_t block;
+ 	ext4_fsblk_t sb_block = get_sb_block(&data);
+ 	ext4_fsblk_t logical_sb_block;
+@@ -3642,7 +3654,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 
+ 	sbi->s_daxdev = dax_dev;
+ 	sbi->s_blockgroup_lock =
+-		kzalloc(sizeof(struct blockgroup_lock), GFP_KERNEL);
++		kzalloc(sizeof(struct blockgroup_lock), GFP_KERNEL|___GFP_COF);
+ 	if (!sbi->s_blockgroup_lock)
+ 		goto out_free_base;
+ 
+@@ -4944,7 +4956,7 @@ static int ext4_load_journal(struct super_block *sb,
+ 	if (!ext4_has_feature_journal_needs_recovery(sb))
+ 		err = jbd2_journal_wipe(journal, !really_read_only);
+ 	if (!err) {
+-		char *save = kmalloc(EXT4_S_ERR_LEN, GFP_KERNEL);
++		char *save = kmalloc(EXT4_S_ERR_LEN, GFP_KERNEL|___GFP_COF);
+ 		if (save)
+ 			memcpy(save, ((char *) es) +
+ 			       EXT4_S_ERR_START, EXT4_S_ERR_LEN);
+diff --git a/fs/fhandle.c b/fs/fhandle.c
+index 01263ffbc4c0..09a7a7274fb5 100644
+--- a/fs/fhandle.c
++++ b/fs/fhandle.c
+@@ -38,7 +38,7 @@ static long do_sys_name_to_handle(struct path *path,
+ 		return -EINVAL;
+ 
+ 	handle = kmalloc(sizeof(struct file_handle) + f_handle.handle_bytes,
+-			 GFP_KERNEL);
++			 GFP_KERNEL | ___GFP_COF);
+ 	if (!handle)
+ 		return -ENOMEM;
+ 
+@@ -190,7 +190,7 @@ static int handle_to_path(int mountdirfd, struct file_handle __user *ufh,
+ 		goto out_err;
+ 	}
+ 	handle = kmalloc(sizeof(struct file_handle) + f_handle.handle_bytes,
+-			 GFP_KERNEL);
++			 GFP_KERNEL | ___GFP_COF);
+ 	if (!handle) {
+ 		retval = -ENOMEM;
+ 		goto out_err;
+diff --git a/fs/file.c b/fs/file.c
+index 3da91a112bab..b2674f63a24c 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -108,7 +108,7 @@ static struct fdtable * alloc_fdtable(unsigned int nr)
+ 	if (unlikely(nr > sysctl_nr_open))
+ 		nr = ((sysctl_nr_open - 1) | (BITS_PER_LONG - 1)) + 1;
+ 
+-	fdt = kmalloc(sizeof(struct fdtable), GFP_KERNEL_ACCOUNT);
++	fdt = kmalloc(sizeof(struct fdtable), GFP_KERNEL_ACCOUNT | ___GFP_COF);
+ 	if (!fdt)
+ 		goto out;
+ 	fdt->max_fds = nr;
+diff --git a/fs/file_table.c b/fs/file_table.c
+index 30d55c9a1744..b02f1534f9cd 100644
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -98,7 +98,7 @@ static struct file *__alloc_file(int flags, const struct cred *cred)
+ 	struct file *f;
+ 	int error;
+ 
+-	f = kmem_cache_zalloc(filp_cachep, GFP_KERNEL);
++	f = kmem_cache_zalloc(filp_cachep, GFP_KERNEL/*|___GFP_COF*/);
+ 	if (unlikely(!f))
+ 		return ERR_PTR(-ENOMEM);
+ 
+@@ -379,7 +379,7 @@ EXPORT_SYMBOL(fput);
+ void __init files_init(void)
+ {
+ 	filp_cachep = kmem_cache_create("filp", sizeof(struct file), 0,
+-			SLAB_HWCACHE_ALIGN | SLAB_PANIC | SLAB_ACCOUNT, NULL);
++			/*SLAB_COF|*/SLAB_HWCACHE_ALIGN | SLAB_PANIC | SLAB_ACCOUNT, NULL);
+ 	percpu_counter_init(&nr_files, 0, GFP_KERNEL);
+ }
+ 
+diff --git a/fs/fs_context.c b/fs/fs_context.c
+index 138b5b4d621d..e438ced6bdf1 100644
+--- a/fs/fs_context.c
++++ b/fs/fs_context.c
+@@ -258,7 +258,7 @@ static struct fs_context *alloc_fs_context(struct file_system_type *fs_type,
+ 	struct fs_context *fc;
+ 	int ret = -ENOMEM;
+ 
+-	fc = kzalloc(sizeof(struct fs_context), GFP_KERNEL);
++	fc = kzalloc(sizeof(struct fs_context), GFP_KERNEL | ___GFP_COF);
+ 	if (!fc)
+ 		return ERR_PTR(-ENOMEM);
+ 
+@@ -593,7 +593,7 @@ static int legacy_parse_param(struct fs_context *fc, struct fs_parameter *param)
+ 		return invalf(fc, "VFS: Legacy: Option '%s' contained comma",
+ 			      param->key);
+ 	if (!ctx->legacy_data) {
+-		ctx->legacy_data = kmalloc(PAGE_SIZE, GFP_KERNEL);
++		ctx->legacy_data = kmalloc(PAGE_SIZE, GFP_KERNEL | ___GFP_COF);
+ 		if (!ctx->legacy_data)
+ 			return -ENOMEM;
+ 	}
+@@ -686,7 +686,7 @@ const struct fs_context_operations legacy_fs_context_ops = {
+  */
+ static int legacy_init_fs_context(struct fs_context *fc)
+ {
+-	fc->fs_private = kzalloc(sizeof(struct legacy_fs_context), GFP_KERNEL);
++	fc->fs_private = kzalloc(sizeof(struct legacy_fs_context), GFP_KERNEL | ___GFP_COF);
+ 	if (!fc->fs_private)
+ 		return -ENOMEM;
+ 	fc->ops = &legacy_fs_context_ops;
+diff --git a/fs/fsopen.c b/fs/fsopen.c
+index 043ffa8dc263..f84ffde1c6cf 100644
+--- a/fs/fsopen.c
++++ b/fs/fsopen.c
+@@ -97,7 +97,7 @@ static int fscontext_create_fd(struct fs_context *fc, unsigned int o_flags)
+ 
+ static int fscontext_alloc_log(struct fs_context *fc)
+ {
+-	fc->log = kzalloc(sizeof(*fc->log), GFP_KERNEL);
++	fc->log = kzalloc(sizeof(*fc->log), GFP_KERNEL | ___GFP_COF);
+ 	if (!fc->log)
+ 		return -ENOMEM;
+ 	refcount_set(&fc->log->usage, 1);
+diff --git a/fs/inode.c b/fs/inode.c
+index fef457a42882..a0835c9948b8 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -229,7 +229,7 @@ static struct inode *alloc_inode(struct super_block *sb)
+ 	if (ops->alloc_inode)
+ 		inode = ops->alloc_inode(sb);
+ 	else
+-		inode = kmem_cache_alloc(inode_cachep, GFP_KERNEL);
++		inode = kmem_cache_alloc(inode_cachep, GFP_KERNEL /*| ___GFP_COF*/);
+ 
+ 	if (!inode)
+ 		return NULL;
+@@ -1996,7 +1996,7 @@ void __init inode_init(void)
+ 					 sizeof(struct inode),
+ 					 0,
+ 					 (SLAB_RECLAIM_ACCOUNT|SLAB_PANIC|
+-					 SLAB_MEM_SPREAD|SLAB_ACCOUNT),
++					 SLAB_MEM_SPREAD|SLAB_ACCOUNT/*|SLAB_COF*/),
+ 					 init_once);
+ 
+ 	/* Hash may have been set up in inode_init_early */
+diff --git a/fs/io_uring.c b/fs/io_uring.c
+index 2c819c3c855d..8ad6c45b9dcc 100644
+--- a/fs/io_uring.c
++++ b/fs/io_uring.c
+@@ -391,7 +391,7 @@ static struct io_ring_ctx *io_ring_ctx_alloc(struct io_uring_params *p)
+ 	struct io_ring_ctx *ctx;
+ 	int i;
+ 
+-	ctx = kzalloc(sizeof(*ctx), GFP_KERNEL);
++	ctx = kzalloc(sizeof(*ctx), GFP_KERNEL | ___GFP_COF);
+ 	if (!ctx)
+ 		return NULL;
+ 
+@@ -2023,7 +2023,7 @@ static int io_req_defer(struct io_ring_ctx *ctx, struct io_kiocb *req,
+ 	if (!io_sequence_defer(ctx, req) && list_empty(&ctx->defer_list))
+ 		return 0;
+ 
+-	sqe_copy = kmalloc(sizeof(*sqe_copy), GFP_KERNEL);
++	sqe_copy = kmalloc(sizeof(*sqe_copy), GFP_KERNEL | ___GFP_COF);
+ 	if (!sqe_copy)
+ 		return -EAGAIN;
+ 
+@@ -3027,7 +3027,7 @@ static int __io_sqe_files_scm(struct io_ring_ctx *ctx, int nr, int offset)
+ 			return -EMFILE;
+ 	}
+ 
+-	fpl = kzalloc(sizeof(*fpl), GFP_KERNEL);
++	fpl = kzalloc(sizeof(*fpl), GFP_KERNEL | ___GFP_COF);
+ 	if (!fpl)
+ 		return -ENOMEM;
+ 
+@@ -3110,7 +3110,7 @@ static int io_sqe_files_register(struct io_ring_ctx *ctx, void __user *arg,
+ 	if (nr_args > IORING_MAX_FIXED_FILES)
+ 		return -EMFILE;
+ 
+-	ctx->user_files = kcalloc(nr_args, sizeof(struct file *), GFP_KERNEL);
++	ctx->user_files = kcalloc(nr_args, sizeof(struct file *), GFP_KERNEL | ___GFP_COF);
+ 	if (!ctx->user_files)
+ 		return -ENOMEM;
+ 
+@@ -3381,7 +3381,7 @@ static int io_sqe_buffer_register(struct io_ring_ctx *ctx, void __user *arg,
+ 		return -EINVAL;
+ 
+ 	ctx->user_bufs = kcalloc(nr_args, sizeof(struct io_mapped_ubuf),
+-					GFP_KERNEL);
++					GFP_KERNEL | ___GFP_COF);
+ 	if (!ctx->user_bufs)
+ 		return -ENOMEM;
+ 
+@@ -3425,10 +3425,10 @@ static int io_sqe_buffer_register(struct io_ring_ctx *ctx, void __user *arg,
+ 			kfree(vmas);
+ 			kfree(pages);
+ 			pages = kvmalloc_array(nr_pages, sizeof(struct page *),
+-						GFP_KERNEL);
++						GFP_KERNEL | ___GFP_COF);
+ 			vmas = kvmalloc_array(nr_pages,
+ 					sizeof(struct vm_area_struct *),
+-					GFP_KERNEL);
++					GFP_KERNEL | ___GFP_COF);
+ 			if (!pages || !vmas) {
+ 				ret = -ENOMEM;
+ 				if (ctx->account_mem)
+@@ -3439,7 +3439,7 @@ static int io_sqe_buffer_register(struct io_ring_ctx *ctx, void __user *arg,
+ 		}
+ 
+ 		imu->bvec = kvmalloc_array(nr_pages, sizeof(struct bio_vec),
+-						GFP_KERNEL);
++						GFP_KERNEL | ___GFP_COF);
+ 		ret = -ENOMEM;
+ 		if (!imu->bvec) {
+ 			if (ctx->account_mem)
+diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+index 6ebae6bbe6a5..8a6ff45898b6 100644
+--- a/fs/kernfs/dir.c
++++ b/fs/kernfs/dir.c
+@@ -629,7 +629,7 @@ static struct kernfs_node *__kernfs_new_node(struct kernfs_root *root,
+ 	if (!name)
+ 		return NULL;
+ 
+-	kn = kmem_cache_zalloc(kernfs_node_cache, GFP_KERNEL);
++	kn = kmem_cache_zalloc(kernfs_node_cache, GFP_KERNEL | ___GFP_COF);
+ 	if (!kn)
+ 		goto err_out1;
+ 
+diff --git a/fs/kernfs/mount.c b/fs/kernfs/mount.c
+index 6c12fac2c287..189221275629 100644
+--- a/fs/kernfs/mount.c
++++ b/fs/kernfs/mount.c
+@@ -373,7 +373,7 @@ void __init kernfs_init(void)
+ 	kernfs_node_cache = kmem_cache_create("kernfs_node_cache",
+ 					      sizeof(struct kernfs_node),
+ 					      0,
+-					      SLAB_PANIC | SLAB_TYPESAFE_BY_RCU,
++					      SLAB_PANIC | SLAB_TYPESAFE_BY_RCU | SLAB_COF,
+ 					      NULL);
+ 
+ 	/* Creates slab cache for kernfs inode attributes */
+diff --git a/fs/libfs.c b/fs/libfs.c
+index 1463b038ffc4..a78930cf6c8e 100644
+--- a/fs/libfs.c
++++ b/fs/libfs.c
+@@ -298,7 +298,7 @@ struct pseudo_fs_context *init_pseudo(struct fs_context *fc,
+ {
+ 	struct pseudo_fs_context *ctx;
+ 
+-	ctx = kzalloc(sizeof(struct pseudo_fs_context), GFP_KERNEL);
++	ctx = kzalloc(sizeof(struct pseudo_fs_context), GFP_KERNEL | ___GFP_COF);
+ 	if (likely(ctx)) {
+ 		ctx->magic = magic;
+ 		fc->fs_private = ctx;
+@@ -821,7 +821,7 @@ int simple_attr_open(struct inode *inode, struct file *file,
+ {
+ 	struct simple_attr *attr;
+ 
+-	attr = kmalloc(sizeof(*attr), GFP_KERNEL);
++	attr = kmalloc(sizeof(*attr), GFP_KERNEL | ___GFP_COF);
+ 	if (!attr)
+ 		return -ENOMEM;
+ 
+diff --git a/fs/mbcache.c b/fs/mbcache.c
+index 97c54d3a2227..6a0585ad30e9 100644
+--- a/fs/mbcache.c
++++ b/fs/mbcache.c
+@@ -347,7 +347,7 @@ struct mb_cache *mb_cache_create(int bucket_bits)
+ 	unsigned long bucket_count = 1UL << bucket_bits;
+ 	unsigned long i;
+ 
+-	cache = kzalloc(sizeof(struct mb_cache), GFP_KERNEL);
++	cache = kzalloc(sizeof(struct mb_cache), GFP_KERNEL | ___GFP_COF);
+ 	if (!cache)
+ 		goto err_out;
+ 	cache->c_bucket_bits = bucket_bits;
+@@ -356,7 +356,7 @@ struct mb_cache *mb_cache_create(int bucket_bits)
+ 	spin_lock_init(&cache->c_list_lock);
+ 	cache->c_hash = kmalloc_array(bucket_count,
+ 				      sizeof(struct hlist_bl_head),
+-				      GFP_KERNEL);
++				      GFP_KERNEL | ___GFP_COF);
+ 	if (!cache->c_hash) {
+ 		kfree(cache);
+ 		goto err_out;
+diff --git a/fs/namei.c b/fs/namei.c
+index 671c3c1a3425..cdeaf2a3b241 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -167,7 +167,7 @@ getname_flags(const char __user *filename, int flags, int *empty)
+ 		 * result->iname[0] is within the same object and that
+ 		 * kname can't be equal to result->iname, no matter what.
+ 		 */
+-		result = kzalloc(size, GFP_KERNEL);
++		result = kzalloc(size, GFP_KERNEL | ___GFP_COF);
+ 		if (unlikely(!result)) {
+ 			__putname(kname);
+ 			return ERR_PTR(-ENOMEM);
+@@ -225,7 +225,7 @@ getname_kernel(const char * filename)
+ 		const size_t size = offsetof(struct filename, iname[1]);
+ 		struct filename *tmp;
+ 
+-		tmp = kmalloc(size, GFP_KERNEL);
++		tmp = kmalloc(size, GFP_KERNEL | ___GFP_COF);
+ 		if (unlikely(!tmp)) {
+ 			__putname(result);
+ 			return ERR_PTR(-ENOMEM);
+@@ -541,7 +541,7 @@ static int __nd_alloc_stack(struct nameidata *nd)
+ 			return -ECHILD;
+ 	} else {
+ 		p= kmalloc_array(MAXSYMLINKS, sizeof(struct saved),
+-				  GFP_KERNEL);
++				  GFP_KERNEL | ___GFP_COF);
+ 		if (unlikely(!p))
+ 			return -ENOMEM;
+ 	}
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 2adfe7b166a3..cb83ac0bb571 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -174,7 +174,7 @@ unsigned int mnt_get_count(struct mount *mnt)
+ 
+ static struct mount *alloc_vfsmnt(const char *name)
+ {
+-	struct mount *mnt = kmem_cache_zalloc(mnt_cache, GFP_KERNEL);
++	struct mount *mnt = kmem_cache_zalloc(mnt_cache, GFP_KERNEL | ___GFP_COF);
+ 	if (mnt) {
+ 		int err;
+ 
+@@ -715,7 +715,7 @@ static struct mountpoint *get_mountpoint(struct dentry *dentry)
+ 	}
+ 
+ 	if (!new)
+-		new = kmalloc(sizeof(struct mountpoint), GFP_KERNEL);
++		new = kmalloc(sizeof(struct mountpoint), GFP_KERNEL | ___GFP_COF);
+ 	if (!new)
+ 		return ERR_PTR(-ENOMEM);
+ 
+@@ -3016,7 +3016,7 @@ void *copy_mount_options(const void __user * data)
+ 	if (!data)
+ 		return NULL;
+ 
+-	copy = kmalloc(PAGE_SIZE, GFP_KERNEL);
++	copy = kmalloc(PAGE_SIZE, GFP_KERNEL | ___GFP_COF);
+ 	if (!copy)
+ 		return ERR_PTR(-ENOMEM);
+ 
+@@ -3184,7 +3184,7 @@ static struct mnt_namespace *alloc_mnt_ns(struct user_namespace *user_ns, bool a
+ 	if (!ucounts)
+ 		return ERR_PTR(-ENOSPC);
+ 
+-	new_ns = kzalloc(sizeof(struct mnt_namespace), GFP_KERNEL);
++	new_ns = kzalloc(sizeof(struct mnt_namespace), GFP_KERNEL | ___GFP_COF);
+ 	if (!new_ns) {
+ 		dec_mnt_namespaces(ucounts);
+ 		return ERR_PTR(-ENOMEM);
+@@ -3747,7 +3747,7 @@ void __init mnt_init(void)
+ 	int err;
+ 
+ 	mnt_cache = kmem_cache_create("mnt_cache", sizeof(struct mount),
+-			0, SLAB_HWCACHE_ALIGN | SLAB_PANIC, NULL);
++			0, SLAB_HWCACHE_ALIGN | SLAB_PANIC | SLAB_COF, NULL);
+ 
+ 	mount_hashtable = alloc_large_system_hash("Mount-cache",
+ 				sizeof(struct hlist_head),
+diff --git a/fs/pipe.c b/fs/pipe.c
+index 8a2ab2f974bd..afc7a61a747b 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -656,7 +656,7 @@ struct pipe_inode_info *alloc_pipe_info(void)
+ 	unsigned long user_bufs;
+ 	unsigned int max_size = READ_ONCE(pipe_max_size);
+ 
+-	pipe = kzalloc(sizeof(struct pipe_inode_info), GFP_KERNEL_ACCOUNT);
++	pipe = kzalloc(sizeof(struct pipe_inode_info), GFP_KERNEL_ACCOUNT | ___GFP_COF);
+ 	if (pipe == NULL)
+ 		goto out_free_uid;
+ 
+@@ -674,7 +674,7 @@ struct pipe_inode_info *alloc_pipe_info(void)
+ 		goto out_revert_acct;
+ 
+ 	pipe->bufs = kcalloc(pipe_bufs, sizeof(struct pipe_buffer),
+-			     GFP_KERNEL_ACCOUNT);
++			     GFP_KERNEL_ACCOUNT | ___GFP_COF);
+ 
+ 	if (pipe->bufs) {
+ 		init_waitqueue_head(&pipe->wait);
+@@ -1097,7 +1097,7 @@ static long pipe_set_size(struct pipe_inode_info *pipe, unsigned long arg)
+ 	}
+ 
+ 	bufs = kcalloc(nr_pages, sizeof(*bufs),
+-		       GFP_KERNEL_ACCOUNT | __GFP_NOWARN);
++		       GFP_KERNEL_ACCOUNT | __GFP_NOWARN | ___GFP_COF);
+ 	if (unlikely(!bufs)) {
+ 		ret = -ENOMEM;
+ 		goto out_revert_acct;
+diff --git a/fs/posix_acl.c b/fs/posix_acl.c
+index 84ad1c90d535..2d79bd9b431e 100644
+--- a/fs/posix_acl.c
++++ b/fs/posix_acl.c
+@@ -178,7 +178,7 @@ posix_acl_alloc(int count, gfp_t flags)
+ {
+ 	const size_t size = sizeof(struct posix_acl) +
+ 	                    count * sizeof(struct posix_acl_entry);
+-	struct posix_acl *acl = kmalloc(size, flags);
++	struct posix_acl *acl = kmalloc(size, flags | ___GFP_COF);
+ 	if (acl)
+ 		posix_acl_init(acl, count);
+ 	return acl;
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 5bbf587f5bc1..4bad822f19ba 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -789,7 +789,7 @@ ssize_t rw_copy_check_uvector(int type, const struct iovec __user * uvector,
+ 		goto out;
+ 	}
+ 	if (nr_segs > fast_segs) {
+-		iov = kmalloc_array(nr_segs, sizeof(struct iovec), GFP_KERNEL);
++		iov = kmalloc_array(nr_segs, sizeof(struct iovec), GFP_KERNEL | ___GFP_COF);
+ 		if (iov == NULL) {
+ 			ret = -ENOMEM;
+ 			goto out;
+@@ -860,7 +860,7 @@ ssize_t compat_rw_copy_check_uvector(int type,
+ 		goto out;
+ 	if (nr_segs > fast_segs) {
+ 		ret = -ENOMEM;
+-		iov = kmalloc_array(nr_segs, sizeof(struct iovec), GFP_KERNEL);
++		iov = kmalloc_array(nr_segs, sizeof(struct iovec), GFP_KERNEL | ___GFP_COF);
+ 		if (iov == NULL)
+ 			goto out;
+ 	}
+diff --git a/fs/select.c b/fs/select.c
+index 53a0c149f528..d6bde6565c9d 100644
+--- a/fs/select.c
++++ b/fs/select.c
+@@ -990,7 +990,7 @@ static int do_sys_poll(struct pollfd __user *ufds, unsigned int nfds,
+ 
+ 		len = min(todo, POLLFD_PER_PAGE);
+ 		walk = walk->next = kmalloc(struct_size(walk, entries, len),
+-					    GFP_KERNEL);
++					    GFP_KERNEL | ___GFP_COF);
+ 		if (!walk) {
+ 			err = -ENOMEM;
+ 			goto out_fds;
+@@ -1200,7 +1200,7 @@ static int compat_core_sys_select(int n, compat_ulong_t __user *inp,
+ 	size = FDS_BYTES(n);
+ 	bits = stack_fds;
+ 	if (size > sizeof(stack_fds) / 6) {
+-		bits = kmalloc_array(6, size, GFP_KERNEL);
++		bits = kmalloc_array(6, size, GFP_KERNEL | ___GFP_COF);
+ 		ret = -ENOMEM;
+ 		if (!bits)
+ 			goto out_nofds;
+diff --git a/fs/seq_file.c b/fs/seq_file.c
+index 1600034a929b..905ac7eb6925 100644
+--- a/fs/seq_file.c
++++ b/fs/seq_file.c
+@@ -566,7 +566,7 @@ static void single_stop(struct seq_file *p, void *v)
+ int single_open(struct file *file, int (*show)(struct seq_file *, void *),
+ 		void *data)
+ {
+-	struct seq_operations *op = kmalloc(sizeof(*op), GFP_KERNEL_ACCOUNT);
++	struct seq_operations *op = kmalloc(sizeof(*op), GFP_KERNEL_ACCOUNT | ___GFP_COF);
+ 	int res = -ENOMEM;
+ 
+ 	if (op) {
+@@ -628,7 +628,7 @@ void *__seq_open_private(struct file *f, const struct seq_operations *ops,
+ 	void *private;
+ 	struct seq_file *seq;
+ 
+-	private = kzalloc(psize, GFP_KERNEL_ACCOUNT);
++	private = kzalloc(psize, GFP_KERNEL_ACCOUNT | ___GFP_COF);
+ 	if (private == NULL)
+ 		goto out;
+ 
+diff --git a/fs/signalfd.c b/fs/signalfd.c
+index 44b6845b071c..66092c4ce60e 100644
+--- a/fs/signalfd.c
++++ b/fs/signalfd.c
+@@ -275,7 +275,7 @@ static int do_signalfd4(int ufd, sigset_t *mask, int flags)
+ 	signotset(mask);
+ 
+ 	if (ufd == -1) {
+-		ctx = kmalloc(sizeof(*ctx), GFP_KERNEL);
++		ctx = kmalloc(sizeof(*ctx), GFP_KERNEL | ___GFP_COF);
+ 		if (!ctx)
+ 			return -ENOMEM;
+ 
+diff --git a/fs/splice.c b/fs/splice.c
+index 98412721f056..539407581140 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -258,9 +258,9 @@ int splice_grow_spd(const struct pipe_inode_info *pipe, struct splice_pipe_desc
+ 	if (buffers <= PIPE_DEF_BUFFERS)
+ 		return 0;
+ 
+-	spd->pages = kmalloc_array(buffers, sizeof(struct page *), GFP_KERNEL);
++	spd->pages = kmalloc_array(buffers, sizeof(struct page *), GFP_KERNEL | ___GFP_COF);
+ 	spd->partial = kmalloc_array(buffers, sizeof(struct partial_page),
+-				     GFP_KERNEL);
++				     GFP_KERNEL | ___GFP_COF);
+ 
+ 	if (spd->pages && spd->partial)
+ 		return 0;
+@@ -393,7 +393,7 @@ static ssize_t default_file_splice_read(struct file *in, loff_t *ppos,
+ 
+ 	vec = __vec;
+ 	if (nr_pages > PIPE_DEF_BUFFERS) {
+-		vec = kmalloc_array(nr_pages, sizeof(struct kvec), GFP_KERNEL);
++		vec = kmalloc_array(nr_pages, sizeof(struct kvec), GFP_KERNEL | ___GFP_COF);
+ 		if (unlikely(!vec)) {
+ 			res = -ENOMEM;
+ 			goto out;
+@@ -688,7 +688,7 @@ iter_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
+ 	};
+ 	int nbufs = pipe->buffers;
+ 	struct bio_vec *array = kcalloc(nbufs, sizeof(struct bio_vec),
+-					GFP_KERNEL);
++					GFP_KERNEL | ___GFP_COF);
+ 	ssize_t ret;
+ 
+ 	if (unlikely(!array))
+@@ -710,7 +710,7 @@ iter_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
+ 			kfree(array);
+ 			nbufs = pipe->buffers;
+ 			array = kcalloc(nbufs, sizeof(struct bio_vec),
+-					GFP_KERNEL);
++					GFP_KERNEL | ___GFP_COF);
+ 			if (!array) {
+ 				ret = -ENOMEM;
+ 				break;
+diff --git a/fs/timerfd.c b/fs/timerfd.c
+index 48305ba41e3c..c54760fc985d 100644
+--- a/fs/timerfd.c
++++ b/fs/timerfd.c
+@@ -406,7 +406,7 @@ SYSCALL_DEFINE2(timerfd_create, int, clockid, int, flags)
+ 	    !capable(CAP_WAKE_ALARM))
+ 		return -EPERM;
+ 
+-	ctx = kzalloc(sizeof(*ctx), GFP_KERNEL);
++	ctx = kzalloc(sizeof(*ctx), GFP_KERNEL | ___GFP_COF);
+ 	if (!ctx)
+ 		return -ENOMEM;
+ 
+diff --git a/fs/userfaultfd.c b/fs/userfaultfd.c
+index f9fd18670e22..353d42b6307d 100644
+--- a/fs/userfaultfd.c
++++ b/fs/userfaultfd.c
+@@ -687,11 +687,11 @@ int dup_userfaultfd(struct vm_area_struct *vma, struct list_head *fcs)
+ 		}
+ 
+ 	if (!ctx) {
+-		fctx = kmalloc(sizeof(*fctx), GFP_KERNEL);
++		fctx = kmalloc(sizeof(*fctx), GFP_KERNEL | ___GFP_COF);
+ 		if (!fctx)
+ 			return -ENOMEM;
+ 
+-		ctx = kmem_cache_alloc(userfaultfd_ctx_cachep, GFP_KERNEL);
++		ctx = kmem_cache_alloc(userfaultfd_ctx_cachep, GFP_KERNEL | ___GFP_COF);
+ 		if (!ctx) {
+ 			kfree(fctx);
+ 			return -ENOMEM;
+@@ -838,7 +838,7 @@ int userfaultfd_unmap_prep(struct vm_area_struct *vma,
+ 		    has_unmap_ctx(ctx, unmaps, start, end))
+ 			continue;
+ 
+-		unmap_ctx = kzalloc(sizeof(*unmap_ctx), GFP_KERNEL);
++		unmap_ctx = kzalloc(sizeof(*unmap_ctx), GFP_KERNEL | ___GFP_COF);
+ 		if (!unmap_ctx)
+ 			return -ENOMEM;
+ 
+@@ -1955,7 +1955,7 @@ SYSCALL_DEFINE1(userfaultfd, int, flags)
+ 	if (flags & ~UFFD_SHARED_FCNTL_FLAGS)
+ 		return -EINVAL;
+ 
+-	ctx = kmem_cache_alloc(userfaultfd_ctx_cachep, GFP_KERNEL);
++	ctx = kmem_cache_alloc(userfaultfd_ctx_cachep, GFP_KERNEL | ___GFP_COF);
+ 	if (!ctx)
+ 		return -ENOMEM;
+ 
+@@ -1983,7 +1983,7 @@ static int __init userfaultfd_init(void)
+ 	userfaultfd_ctx_cachep = kmem_cache_create("userfaultfd_ctx_cache",
+ 						sizeof(struct userfaultfd_ctx),
+ 						0,
+-						SLAB_HWCACHE_ALIGN|SLAB_PANIC,
++						SLAB_HWCACHE_ALIGN|SLAB_PANIC|SLAB_COF,
+ 						init_once_userfaultfd_ctx);
+ 	return 0;
+ }
+diff --git a/fs/xattr.c b/fs/xattr.c
+index 90dd78f0eb27..ad06c29f9f10 100644
+--- a/fs/xattr.c
++++ b/fs/xattr.c
+@@ -817,7 +817,7 @@ struct simple_xattr *simple_xattr_alloc(const void *value, size_t size)
+ 	if (len < sizeof(*new_xattr))
+ 		return NULL;
+ 
+-	new_xattr = kmalloc(len, GFP_KERNEL);
++	new_xattr = kmalloc(len, GFP_KERNEL | ___GFP_COF);
+ 	if (!new_xattr)
+ 		return NULL;
+ 
+diff --git a/include/linux/cof.h b/include/linux/cof.h
+new file mode 100644
+index 000000000000..0df28636cebc
+--- /dev/null
++++ b/include/linux/cof.h
+@@ -0,0 +1,17 @@
++#ifndef _LINUX_COF_H
++#define _LINUX_COF_H
++
++#include <linux/mm_types.h>
++
++
++#define MIGRATE_SUCCESS 0
++
++int migrate_huge(struct page *);
++
++int migrate_normal(struct page *);
++
++int bitflip_migrate(const unsigned long);
++
++
++
++#endif /* _LINUX_COF_H */
+diff --git a/include/linux/cof_types.h b/include/linux/cof_types.h
+new file mode 100644
+index 000000000000..8709d2a2bb0d
+--- /dev/null
++++ b/include/linux/cof_types.h
+@@ -0,0 +1,21 @@
++#ifndef _LINUX_COF_TYPES_H
++#define _LINUX_COF_TYPES_H
++
++#include <linux/mm_types.h>
++#include <linux/vmalloc.h>
++#include <linux/types.h>
++
++
++struct cof_page {
++	struct page page;
++	struct vm_struct *vm_area;
++};
++
++void *cof_page_address(struct kmem_cache *, struct page *);
++struct page *cof_virt_to_head_page(struct kmem_cache *, const void *);
++void cof_free_pages(struct kmem_cache *, struct page *);
++const unsigned int cof_compound_order(struct kmem_cache *, struct page *); 
++void cof_prep_compound_page(struct kmem_cache *s, struct page *, unsigned int order);
++#endif
++
++
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index 61f2f6ff9467..bf27ca7d57db 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -7,6 +7,7 @@
+ #include <linux/stddef.h>
+ #include <linux/linkage.h>
+ #include <linux/topology.h>
++#include <linux/printk.h>
+ 
+ struct vm_area_struct;
+ 
+@@ -39,8 +40,9 @@ struct vm_area_struct;
+ #define ___GFP_HARDWALL		0x100000u
+ #define ___GFP_THISNODE		0x200000u
+ #define ___GFP_ACCOUNT		0x400000u
++#define ___GFP_COF		0x800000u //cof
+ #ifdef CONFIG_LOCKDEP
+-#define ___GFP_NOLOCKDEP	0x800000u
++#define ___GFP_NOLOCKDEP	0x1000000u
+ #else
+ #define ___GFP_NOLOCKDEP	0
+ #endif
+@@ -58,6 +60,7 @@ struct vm_area_struct;
+ #define __GFP_DMA32	((__force gfp_t)___GFP_DMA32)
+ #define __GFP_MOVABLE	((__force gfp_t)___GFP_MOVABLE)  /* ZONE_MOVABLE allowed */
+ #define GFP_ZONEMASK	(__GFP_DMA|__GFP_HIGHMEM|__GFP_DMA32|__GFP_MOVABLE)
++#define GFP_COF ((__force gfp_t)___GFP_COF)
+ 
+ /**
+  * DOC: Page mobility and placement hints
+@@ -217,7 +220,7 @@ struct vm_area_struct;
+ #define __GFP_NOLOCKDEP ((__force gfp_t)___GFP_NOLOCKDEP)
+ 
+ /* Room for N __GFP_FOO bits */
+-#define __GFP_BITS_SHIFT (23 + IS_ENABLED(CONFIG_LOCKDEP))
++#define __GFP_BITS_SHIFT (24 + IS_ENABLED(CONFIG_LOCKDEP)) //cof (24)
+ #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
+ 
+ /**
+diff --git a/include/linux/migrate_ptpages.h b/include/linux/migrate_ptpages.h
+new file mode 100644
+index 000000000000..8ac594fa0b7d
+--- /dev/null
++++ b/include/linux/migrate_ptpages.h
+@@ -0,0 +1,14 @@
++#ifndef MIGRATE_PTPAGES_H                                                                             
++#define MIGRATE_PTPAGES_H
++
++#include <linux/mm_types.h>
++
++int migrate_ptpage(struct page*);
++
++
++
++
++
++
++
++#endif
+diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+index 1bf83c8fcaa7..673816f21a90 100644
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -131,6 +131,9 @@ enum pageflags {
+ 	PG_young,
+ 	PG_idle,
+ #endif
++	PG_cof,
++	PG_flip,
++	PG_ptp,
+ 	__NR_PAGEFLAGS,
+ 
+ 	/* Filesystems */
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index 4d2a2fa55ed5..914c16e07d46 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -120,6 +120,11 @@
+ /* Slab deactivation flag */
+ #define SLAB_DEACTIVATED	((slab_flags_t __force)0x10000000U)
+ 
++/* cof flag */
++#define SLAB_COF 		((slab_flags_t __force)0x20000000U) 
++
++
++
+ /*
+  * ZERO_SIZE_PTR will be returned for zero sized kmalloc requests.
+  *
+@@ -309,6 +314,7 @@ static inline void __check_heap_object(const void *ptr, unsigned long n,
+ enum kmalloc_cache_type {
+ 	KMALLOC_NORMAL = 0,
+ 	KMALLOC_RECLAIM,
++	KMALLOC_COF,
+ #ifdef CONFIG_ZONE_DMA
+ 	KMALLOC_DMA,
+ #endif
+@@ -326,13 +332,22 @@ static __always_inline enum kmalloc_cache_type kmalloc_type(gfp_t flags)
+ 	 * The most common case is KMALLOC_NORMAL, so test for it
+ 	 * with a single branch for both flags.
+ 	 */
+-	if (likely((flags & (__GFP_DMA | __GFP_RECLAIMABLE)) == 0))
++	if (likely((flags & (__GFP_DMA | __GFP_RECLAIMABLE | ___GFP_COF)) == 0))
+ 		return KMALLOC_NORMAL;
+ 
+ 	/*
+ 	 * At least one of the flags has to be set. If both are, __GFP_DMA
+ 	 * is more important.
+ 	 */
++	if((flags & ___GFP_COF) && ((flags & __GFP_ATOMIC) == 0)) {
++		//pr_info("kmalloc_type(): cofmm\n");
++		return KMALLOC_COF;
++	}
++	else {
++		//pr_info("kmalloc_type(): COF AND ATOMICCC\n");
++		return KMALLOC_NORMAL;
++	}
++	pr_info("not normal but not cof???\n");
+ 	return flags & __GFP_DMA ? KMALLOC_DMA : KMALLOC_RECLAIM;
+ #else
+ 	return flags & __GFP_RECLAIMABLE ? KMALLOC_RECLAIM : KMALLOC_NORMAL;
+diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
+index 4e7809408073..94bb1fd3b4f9 100644
+--- a/include/linux/vmalloc.h
++++ b/include/linux/vmalloc.h
+@@ -9,6 +9,13 @@
+ #include <asm/page.h>		/* pgprot_t */
+ #include <linux/rbtree.h>
+ #include <linux/overflow.h>
++//#include <linux/fs_context.h>
++#include <linux/mmzone.h>
++#include <linux/migrate_mode.h>
++//#include <linux/migrate.h>
++//#include <linux/fs.h>
++//#include <linux/mount.h>
++//#include <linux/pseudo_fs.h>
+ 
+ struct vm_area_struct;		/* vma defining user mapping in mm_types.h */
+ struct notifier_block;		/* in notifier.h */
+@@ -47,6 +54,7 @@ struct vm_struct {
+ 	unsigned int		nr_pages;
+ 	phys_addr_t		phys_addr;
+ 	const void		*caller;
++	void			*cof_page;
+ };
+ 
+ struct vmap_area {
+@@ -235,4 +243,28 @@ pcpu_free_vm_areas(struct vm_struct **vms, int nr_vms)
+ int register_vmap_purge_notifier(struct notifier_block *nb);
+ int unregister_vmap_purge_notifier(struct notifier_block *nb);
+ 
++
++/* 
++ * vmalloc_migration stuff cof.
++ */
++
++struct vmalloc_mig_struct {
++	struct inode *inode;
++};
++
++//extern enum migrate_mode_t;
++
++__must_check struct vm_struct *page_to_vm_struct(struct page *);
++//pte_t *walk_page_table_get_pte(struct mm_struct *, const unsigned long);
++int set_vmalloc_page_movable(struct page *, struct vmalloc_mig_struct *);
++//int vmalloc_init_fs_context(struct fs_context *);
++int vmalloc_mig_mount(void);
++void vmalloc_mig_unmount(void);
++bool vmalloc_mig_isolate(struct page *, isolate_mode_t);
++int vmalloc_mig_migrate(struct address_space *, struct page *, struct page *, enum migrate_mode);
++void vmalloc_mig_putback(struct page *);
++void __init vmalloc_mig_init(void);
++//int setup_migration(struct vmalloc_mig_struct *);
++
++
+ #endif /* _LINUX_VMALLOC_H */
+diff --git a/include/net/request_sock.h b/include/net/request_sock.h
+index cf8b33213bbc..4debfcec990f 100644
+--- a/include/net/request_sock.h
++++ b/include/net/request_sock.h
+@@ -81,7 +81,7 @@ reqsk_alloc(const struct request_sock_ops *ops, struct sock *sk_listener,
+ {
+ 	struct request_sock *req;
+ 
+-	req = kmem_cache_alloc(ops->slab, GFP_ATOMIC | __GFP_NOWARN);
++	req = kmem_cache_alloc(ops->slab, GFP_ATOMIC | __GFP_NOWARN | ___GFP_COF);
+ 	if (!req)
+ 		return NULL;
+ 	req->rsk_listener = NULL;
+diff --git a/include/trace/events/mmflags.h b/include/trace/events/mmflags.h
+index a1675d43777e..41267f8d1fd4 100644
+--- a/include/trace/events/mmflags.h
++++ b/include/trace/events/mmflags.h
+@@ -48,7 +48,8 @@
+ 	{(unsigned long)__GFP_WRITE,		"__GFP_WRITE"},		\
+ 	{(unsigned long)__GFP_RECLAIM,		"__GFP_RECLAIM"},	\
+ 	{(unsigned long)__GFP_DIRECT_RECLAIM,	"__GFP_DIRECT_RECLAIM"},\
+-	{(unsigned long)__GFP_KSWAPD_RECLAIM,	"__GFP_KSWAPD_RECLAIM"}\
++	{(unsigned long)__GFP_KSWAPD_RECLAIM,	"__GFP_KSWAPD_RECLAIM"},\
++	{(unsigned long)___GFP_COF,		"___GFP_COF"}\
+ 
+ #define show_gfp_flags(flags)						\
+ 	(flags) ? __print_flags(flags, "|",				\
+@@ -100,7 +101,10 @@
+ 	{1UL << PG_mappedtodisk,	"mappedtodisk"	},		\
+ 	{1UL << PG_reclaim,		"reclaim"	},		\
+ 	{1UL << PG_swapbacked,		"swapbacked"	},		\
+-	{1UL << PG_unevictable,		"unevictable"	}		\
++	{1UL << PG_unevictable,		"unevictable"	},		\
++	{1UL << PG_cof, 		"cof"	},		\
++	{1UL << PG_flip, 		"flip"		},		\
++	{1UL << PG_ptp,     "ptp"   }       \
+ IF_HAVE_PG_MLOCK(PG_mlocked,		"mlocked"	)		\
+ IF_HAVE_PG_UNCACHED(PG_uncached,	"uncached"	)		\
+ IF_HAVE_PG_HWPOISON(PG_hwpoison,	"hwpoison"	)		\
+diff --git a/init/main.c b/init/main.c
+index 91f6ebb30ef0..0c312c0298c6 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -776,6 +776,7 @@ asmlinkage __visible void __init start_kernel(void)
+ 	poking_init();
+ 	check_bugs();
+ 
++	vmalloc_mig_init();
+ 	acpi_subsystem_init();
+ 	arch_post_acpi_subsys_init();
+ 	sfi_init_late();
+diff --git a/kernel/audit.c b/kernel/audit.c
+index da8dc0db5bd3..153e9e58c7eb 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1579,7 +1579,7 @@ static int __init audit_init(void)
+ 
+ 	audit_buffer_cache = kmem_cache_create("audit_buffer",
+ 					       sizeof(struct audit_buffer),
+-					       0, SLAB_PANIC, NULL);
++					       0, SLAB_PANIC|SLAB_COF, NULL);
+ 
+ 	skb_queue_head_init(&audit_queue);
+ 	skb_queue_head_init(&audit_retry_queue);
+@@ -1673,7 +1673,7 @@ static struct audit_buffer *audit_buffer_alloc(struct audit_context *ctx,
+ {
+ 	struct audit_buffer *ab;
+ 
+-	ab = kmem_cache_alloc(audit_buffer_cache, gfp_mask);
++	ab = kmem_cache_alloc(audit_buffer_cache, gfp_mask | ___GFP_COF);
+ 	if (!ab)
+ 		return NULL;
+ 
+diff --git a/kernel/cred.c b/kernel/cred.c
+index c0a4c12d38b2..da0be505cfb8 100644
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -214,7 +214,7 @@ struct cred *cred_alloc_blank(void)
+ {
+ 	struct cred *new;
+ 
+-	new = kmem_cache_zalloc(cred_jar, GFP_KERNEL);
++	new = kmem_cache_zalloc(cred_jar, GFP_KERNEL /*| ___GFP_COF*/);
+ 	if (!new)
+ 		return NULL;
+ 
+@@ -255,7 +255,7 @@ struct cred *prepare_creds(void)
+ 
+ 	validate_process_creds();
+ 
+-	new = kmem_cache_alloc(cred_jar, GFP_KERNEL);
++	new = kmem_cache_alloc(cred_jar, GFP_KERNEL /*| ___GFP_COF*/);
+ 	if (!new)
+ 		return NULL;
+ 
+@@ -657,7 +657,7 @@ void __init cred_init(void)
+ {
+ 	/* allocate a slab in which we can store credentials */
+ 	cred_jar = kmem_cache_create("cred_jar", sizeof(struct cred), 0,
+-			SLAB_HWCACHE_ALIGN|SLAB_PANIC|SLAB_ACCOUNT, NULL);
++			SLAB_HWCACHE_ALIGN|SLAB_PANIC|SLAB_ACCOUNT/*|SLAB_COF*/, NULL);
+ }
+ 
+ /**
+@@ -683,7 +683,7 @@ struct cred *prepare_kernel_cred(struct task_struct *daemon)
+ 	const struct cred *old;
+ 	struct cred *new;
+ 
+-	new = kmem_cache_alloc(cred_jar, GFP_KERNEL);
++	new = kmem_cache_alloc(cred_jar, GFP_KERNEL /*| ___GFP_COF*/);
+ 	if (!new)
+ 		return NULL;
+ 
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 6cabc124378c..94cd8a570cdc 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -166,7 +166,7 @@ static struct kmem_cache *task_struct_cachep;
+ 
+ static inline struct task_struct *alloc_task_struct_node(int node)
+ {
+-	return kmem_cache_alloc_node(task_struct_cachep, GFP_KERNEL, node);
++	return kmem_cache_alloc_node(task_struct_cachep, GFP_KERNEL | ___GFP_COF, node);
+ }
+ 
+ static inline void free_task_struct(struct task_struct *tsk)
+@@ -303,7 +303,7 @@ static unsigned long *alloc_thread_stack_node(struct task_struct *tsk,
+ 						  int node)
+ {
+ 	unsigned long *stack;
+-	stack = kmem_cache_alloc_node(thread_stack_cache, THREADINFO_GFP, node);
++	stack = kmem_cache_alloc_node(thread_stack_cache, THREADINFO_GFP | ___GFP_COF, node);
+ 	tsk->stack = stack;
+ 	return stack;
+ }
+@@ -316,7 +316,7 @@ static void free_thread_stack(struct task_struct *tsk)
+ void thread_stack_cache_init(void)
+ {
+ 	thread_stack_cache = kmem_cache_create_usercopy("thread_stack",
+-					THREAD_SIZE, THREAD_SIZE, 0, 0,
++					THREAD_SIZE, THREAD_SIZE, 0 SLAB_COF, 0,
+ 					THREAD_SIZE, NULL);
+ 	BUG_ON(thread_stack_cache == NULL);
+ }
+@@ -345,7 +345,7 @@ struct vm_area_struct *vm_area_alloc(struct mm_struct *mm)
+ {
+ 	struct vm_area_struct *vma;
+ 
+-	vma = kmem_cache_alloc(vm_area_cachep, GFP_KERNEL);
++	vma = kmem_cache_alloc(vm_area_cachep, GFP_KERNEL|___GFP_COF);
+ 	if (vma)
+ 		vma_init(vma, mm);
+ 	return vma;
+@@ -353,7 +353,7 @@ struct vm_area_struct *vm_area_alloc(struct mm_struct *mm)
+ 
+ struct vm_area_struct *vm_area_dup(struct vm_area_struct *orig)
+ {
+-	struct vm_area_struct *new = kmem_cache_alloc(vm_area_cachep, GFP_KERNEL);
++	struct vm_area_struct *new = kmem_cache_alloc(vm_area_cachep, GFP_KERNEL|___GFP_COF);
+ 
+ 	if (new) {
+ 		*new = *orig;
+@@ -674,7 +674,7 @@ static void check_mm(struct mm_struct *mm)
+ #endif
+ }
+ 
+-#define allocate_mm()	(kmem_cache_alloc(mm_cachep, GFP_KERNEL))
++#define allocate_mm()	(kmem_cache_alloc(mm_cachep, GFP_KERNEL|___GFP_COF))
+ #define free_mm(mm)	(kmem_cache_free(mm_cachep, (mm)))
+ 
+ /*
+@@ -811,7 +811,7 @@ void __init fork_init(void)
+ 	task_struct_whitelist(&useroffset, &usersize);
+ 	task_struct_cachep = kmem_cache_create_usercopy("task_struct",
+ 			arch_task_struct_size, align,
+-			SLAB_PANIC|SLAB_ACCOUNT,
++			SLAB_PANIC|SLAB_ACCOUNT|SLAB_COF,
+ 			useroffset, usersize, NULL);
+ #endif
+ 
+@@ -1504,7 +1504,7 @@ static int copy_sighand(unsigned long clone_flags, struct task_struct *tsk)
+ 		refcount_inc(&current->sighand->count);
+ 		return 0;
+ 	}
+-	sig = kmem_cache_alloc(sighand_cachep, GFP_KERNEL);
++	sig = kmem_cache_alloc(sighand_cachep, GFP_KERNEL|___GFP_COF);
+ 	rcu_assign_pointer(tsk->sighand, sig);
+ 	if (!sig)
+ 		return -ENOMEM;
+@@ -1547,7 +1547,7 @@ static int copy_signal(unsigned long clone_flags, struct task_struct *tsk)
+ 	if (clone_flags & CLONE_THREAD)
+ 		return 0;
+ 
+-	sig = kmem_cache_zalloc(signal_cachep, GFP_KERNEL);
++	sig = kmem_cache_zalloc(signal_cachep, GFP_KERNEL/*|___GFP_COF*/);
+ 	tsk->signal = sig;
+ 	if (!sig)
+ 		return -ENOMEM;
+@@ -2684,10 +2684,10 @@ void __init proc_caches_init(void)
+ 	sighand_cachep = kmem_cache_create("sighand_cache",
+ 			sizeof(struct sighand_struct), 0,
+ 			SLAB_HWCACHE_ALIGN|SLAB_PANIC|SLAB_TYPESAFE_BY_RCU|
+-			SLAB_ACCOUNT, sighand_ctor);
++			SLAB_ACCOUNT|SLAB_COF, sighand_ctor);
+ 	signal_cachep = kmem_cache_create("signal_cache",
+ 			sizeof(struct signal_struct), 0,
+-			SLAB_HWCACHE_ALIGN|SLAB_PANIC|SLAB_ACCOUNT,
++			SLAB_HWCACHE_ALIGN|SLAB_PANIC|SLAB_ACCOUNT/*|SLAB_COF*/,
+ 			NULL);
+ 	files_cachep = kmem_cache_create("files_cache",
+ 			sizeof(struct files_struct), 0,
+@@ -2707,11 +2707,11 @@ void __init proc_caches_init(void)
+ 
+ 	mm_cachep = kmem_cache_create_usercopy("mm_struct",
+ 			mm_size, ARCH_MIN_MMSTRUCT_ALIGN,
+-			SLAB_HWCACHE_ALIGN|SLAB_PANIC|SLAB_ACCOUNT,
++			SLAB_HWCACHE_ALIGN|SLAB_PANIC|SLAB_ACCOUNT|SLAB_COF,
+ 			offsetof(struct mm_struct, saved_auxv),
+ 			sizeof_field(struct mm_struct, saved_auxv),
+ 			NULL);
+-	vm_area_cachep = KMEM_CACHE(vm_area_struct, SLAB_PANIC|SLAB_ACCOUNT);
++	vm_area_cachep = KMEM_CACHE(vm_area_struct, SLAB_PANIC|SLAB_ACCOUNT|SLAB_COF);
+ 	mmap_init();
+ 	nsproxy_cache_init();
+ }
+diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+index a6a79f85c81a..aaceef3dac15 100644
+--- a/kernel/pid_namespace.c
++++ b/kernel/pid_namespace.c
+@@ -95,7 +95,7 @@ static struct pid_namespace *create_pid_namespace(struct user_namespace *user_ns
+ 		goto out;
+ 
+ 	err = -ENOMEM;
+-	ns = kmem_cache_zalloc(pid_ns_cachep, GFP_KERNEL);
++	ns = kmem_cache_zalloc(pid_ns_cachep, GFP_KERNEL | ___GFP_COF);
+ 	if (ns == NULL)
+ 		goto out_dec;
+ 
+@@ -457,7 +457,7 @@ const struct proc_ns_operations pidns_for_children_operations = {
+ 
+ static __init int pid_namespaces_init(void)
+ {
+-	pid_ns_cachep = KMEM_CACHE(pid_namespace, SLAB_PANIC);
++	pid_ns_cachep = KMEM_CACHE(pid_namespace, SLAB_PANIC|SLAB_COF);
+ 
+ #ifdef CONFIG_CHECKPOINT_RESTORE
+ 	register_sysctl_paths(kern_path, pid_ns_ctl_table);
+diff --git a/kernel/time/posix-timers.c b/kernel/time/posix-timers.c
+index 0ec5b7a1d769..ae681314619e 100644
+--- a/kernel/time/posix-timers.c
++++ b/kernel/time/posix-timers.c
+@@ -247,7 +247,7 @@ static int posix_get_hrtimer_res(clockid_t which_clock, struct timespec64 *tp)
+ static __init int init_posix_timers(void)
+ {
+ 	posix_timers_cache = kmem_cache_create("posix_timers_cache",
+-					sizeof (struct k_itimer), 0, SLAB_PANIC,
++					sizeof (struct k_itimer), 0, SLAB_PANIC|SLAB_COF,
+ 					NULL);
+ 	return 0;
+ }
+@@ -429,7 +429,7 @@ static struct pid *good_sigevent(sigevent_t * event)
+ static struct k_itimer * alloc_posix_timer(void)
+ {
+ 	struct k_itimer *tmr;
+-	tmr = kmem_cache_zalloc(posix_timers_cache, GFP_KERNEL);
++	tmr = kmem_cache_zalloc(posix_timers_cache, GFP_KERNEL | ___GFP_COF);
+ 	if (!tmr)
+ 		return tmr;
+ 	if (unlikely(!(tmr->sigq = sigqueue_alloc()))) {
+diff --git a/kernel/user.c b/kernel/user.c
+index 5235d7f49982..890109c38f4a 100644
+--- a/kernel/user.c
++++ b/kernel/user.c
+@@ -182,7 +182,7 @@ struct user_struct *alloc_uid(kuid_t uid)
+ 	spin_unlock_irq(&uidhash_lock);
+ 
+ 	if (!up) {
+-		new = kmem_cache_zalloc(uid_cachep, GFP_KERNEL);
++		new = kmem_cache_zalloc(uid_cachep, GFP_KERNEL | ___GFP_COF);
+ 		if (!new)
+ 			return NULL;
+ 
+@@ -214,7 +214,7 @@ static int __init uid_cache_init(void)
+ 	int n;
+ 
+ 	uid_cachep = kmem_cache_create("uid_cache", sizeof(struct user_struct),
+-			0, SLAB_HWCACHE_ALIGN|SLAB_PANIC, NULL);
++			0, SLAB_HWCACHE_ALIGN|SLAB_PANIC|SLAB_COF, NULL);
+ 
+ 	for(n = 0; n < UIDHASH_SZ; ++n)
+ 		INIT_HLIST_HEAD(uidhash_table + n);
+diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+index c8fa1d274530..bc7407575238 100644
+--- a/lib/radix-tree.c
++++ b/lib/radix-tree.c
+@@ -260,7 +260,7 @@ radix_tree_node_alloc(gfp_t gfp_mask, struct radix_tree_node *parent,
+ 		 * cgroup.
+ 		 */
+ 		ret = kmem_cache_alloc(radix_tree_node_cachep,
+-				       gfp_mask | __GFP_NOWARN);
++				       gfp_mask | __GFP_NOWARN | ___GFP_COF);
+ 		if (ret)
+ 			goto out;
+ 
+@@ -282,7 +282,7 @@ radix_tree_node_alloc(gfp_t gfp_mask, struct radix_tree_node *parent,
+ 		kmemleak_update_trace(ret);
+ 		goto out;
+ 	}
+-	ret = kmem_cache_alloc(radix_tree_node_cachep, gfp_mask);
++	ret = kmem_cache_alloc(radix_tree_node_cachep, gfp_mask | ___GFP_COF);
+ out:
+ 	BUG_ON(radix_tree_is_internal_node(ret));
+ 	if (ret) {
+@@ -344,7 +344,7 @@ static __must_check int __radix_tree_preload(gfp_t gfp_mask, unsigned nr)
+ 	rtp = this_cpu_ptr(&radix_tree_preloads);
+ 	while (rtp->nr < nr) {
+ 		preempt_enable();
+-		node = kmem_cache_alloc(radix_tree_node_cachep, gfp_mask);
++		node = kmem_cache_alloc(radix_tree_node_cachep, gfp_mask | ___GFP_COF);
+ 		if (node == NULL)
+ 			goto out;
+ 		preempt_disable();
+@@ -1609,7 +1609,7 @@ void __init radix_tree_init(void)
+ 	BUILD_BUG_ON(XA_CHUNK_SIZE > 255);
+ 	radix_tree_node_cachep = kmem_cache_create("radix_tree_node",
+ 			sizeof(struct radix_tree_node), 0,
+-			SLAB_PANIC | SLAB_RECLAIM_ACCOUNT,
++			SLAB_PANIC | SLAB_RECLAIM_ACCOUNT | SLAB_COF,
+ 			radix_tree_node_ctor);
+ 	ret = cpuhp_setup_state_nocalls(CPUHP_RADIX_DEAD, "lib/radix:dead",
+ 					NULL, radix_tree_cpu_dead);
+diff --git a/lib/xarray.c b/lib/xarray.c
+index 1237c213f52b..e59808686d1a 100644
+--- a/lib/xarray.c
++++ b/lib/xarray.c
+@@ -300,7 +300,7 @@ bool xas_nomem(struct xa_state *xas, gfp_t gfp)
+ 	}
+ 	if (xas->xa->xa_flags & XA_FLAGS_ACCOUNT)
+ 		gfp |= __GFP_ACCOUNT;
+-	xas->xa_alloc = kmem_cache_alloc(radix_tree_node_cachep, gfp);
++	xas->xa_alloc = kmem_cache_alloc(radix_tree_node_cachep, gfp | ___GFP_COF);
+ 	if (!xas->xa_alloc)
+ 		return false;
+ 	XA_NODE_BUG_ON(xas->xa_alloc, !list_empty(&xas->xa_alloc->private_list));
+@@ -331,10 +331,10 @@ static bool __xas_nomem(struct xa_state *xas, gfp_t gfp)
+ 		gfp |= __GFP_ACCOUNT;
+ 	if (gfpflags_allow_blocking(gfp)) {
+ 		xas_unlock_type(xas, lock_type);
+-		xas->xa_alloc = kmem_cache_alloc(radix_tree_node_cachep, gfp);
++		xas->xa_alloc = kmem_cache_alloc(radix_tree_node_cachep, gfp | ___GFP_COF);
+ 		xas_lock_type(xas, lock_type);
+ 	} else {
+-		xas->xa_alloc = kmem_cache_alloc(radix_tree_node_cachep, gfp);
++		xas->xa_alloc = kmem_cache_alloc(radix_tree_node_cachep, gfp | ___GFP_COF);
+ 	}
+ 	if (!xas->xa_alloc)
+ 		return false;
+@@ -367,7 +367,7 @@ static void *xas_alloc(struct xa_state *xas, unsigned int shift)
+ 		if (xas->xa->xa_flags & XA_FLAGS_ACCOUNT)
+ 			gfp |= __GFP_ACCOUNT;
+ 
+-		node = kmem_cache_alloc(radix_tree_node_cachep, gfp);
++		node = kmem_cache_alloc(radix_tree_node_cachep, gfp | ___GFP_COF);
+ 		if (!node) {
+ 			xas_set_err(xas, -ENOMEM);
+ 			return NULL;
+diff --git a/mm/Kconfig b/mm/Kconfig
+index a5dae9a7eb51..a00ce1d99177 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -736,4 +736,6 @@ config ARCH_HAS_PTE_SPECIAL
+ config ARCH_HAS_HUGEPD
+ 	bool
+ 
++config SLUB_RESILIENCY_TEST
++	bool y
+ endmenu
+diff --git a/mm/Makefile b/mm/Makefile
+index d996846697ef..0abc83470ef2 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -107,3 +107,6 @@ obj-$(CONFIG_PERCPU_STATS) += percpu-stats.o
+ obj-$(CONFIG_ZONE_DEVICE) += memremap.o
+ obj-$(CONFIG_HMM_MIRROR) += hmm.o
+ obj-$(CONFIG_MEMFD_CREATE) += memfd.o
++obj-y += migrate_ptpages.o
++obj-y += cof_util.o
++obj-y += cof.o
+diff --git a/mm/cma.c b/mm/cma.c
+index 7fe0b8356775..698af1f9110b 100644
+--- a/mm/cma.c
++++ b/mm/cma.c
+@@ -100,7 +100,7 @@ static int __init cma_activate_area(struct cma *cma)
+ 	unsigned i = cma->count >> pageblock_order;
+ 	struct zone *zone;
+ 
+-	cma->bitmap = kzalloc(bitmap_size, GFP_KERNEL);
++	cma->bitmap = kzalloc(bitmap_size, GFP_KERNEL | ___GFP_COF);
+ 
+ 	if (!cma->bitmap) {
+ 		cma->count = 0;
+diff --git a/mm/cof.c b/mm/cof.c
+new file mode 100644
+index 000000000000..73e5b7e4ec8e
+--- /dev/null
++++ b/mm/cof.c
+@@ -0,0 +1,120 @@
++#include <linux/cof.h>
++#include <asm/page.h>
++#include <linux/mm.h>
++#include <linux/migrate.h>
++#include <linux/compiler.h>
++#include <linux/mmzone.h>
++#include <linux/migrate_ptpages.h>
++#include "internal.h"
++
++
++int migrate_huge(struct page *huge_page)
++{
++
++    int rv, target_node;
++    LIST_HEAD(migrate);
++    
++    target_node = page_to_nid(huge_page);
++    migrate_prep();
++    rv = isolate_huge_page(huge_page, &migrate);
++    if(rv == false) {
++        pr_info("Couldn't isolate huge page @ PFN : %lx\n", page_to_pfn(huge_page));
++        rv = -EBUSY;
++        goto out;
++    }
++
++    rv = migrate_pages(&migrate, alloc_new_node_page, NULL, target_node, MIGRATE_ASYNC, MR_SYSCALL);
++    if(rv) {
++        pr_info("Couldn't migrate huge page -- RV : %d\n", rv);
++    }
++
++    if(!list_empty(&migrate)) {
++        putback_movable_pages(&migrate);
++    }
++    
++out:
++    return rv;
++
++}
++
++
++
++int migrate_normal(struct page *page)
++{
++
++    int rv, target_node;
++    LIST_HEAD(migrate);
++
++    rv = MIGRATE_SUCCESS;
++    target_node = page_to_nid(page);
++
++    migrate_prep();
++
++    if(PageLRU(page)) {
++        rv = isolate_lru_page(page);
++    }
++    else {
++        rv = isolate_movable_page(page, ISOLATE_UNEVICTABLE);
++    }
++
++    if(rv) {
++        pr_err("Page Isolation Failed\n");
++        goto out;
++    }
++
++    list_add(&page->lru, &migrate);
++    lock_page(page);
++    if(PageWriteback(page)) {
++        wait_on_page_writeback(page);
++        pr_info("Page Writeback Completed\n");
++    }
++    unlock_page(page);
++
++    rv = migrate_pages(&migrate, alloc_new_node_page, NULL, target_node, MIGRATE_ASYNC, MR_SYSCALL);
++    pr_info("migrate_pages RV : %d\n", rv);
++
++    if(rv) {
++        putback_movable_pages(&migrate);
++    }
++
++out:
++    return rv;
++
++}
++
++
++int bitflip_migrate(const unsigned long pfn)
++{
++    int rv;
++    struct page *target_page;
++
++    rv = MIGRATE_SUCCESS;
++
++    if(unlikely(!pfn_valid(pfn))) {
++        rv = -ENXIO;
++        goto out;
++    }
++
++    target_page = pfn_to_page(pfn);
++    target_page = compound_head(target_page);
++    
++    if(test_bit(PG_ptp, &target_page->flags)) {
++        pr_info("Migrating ptp\n");
++        rv = migrate_ptpage(target_page);
++        goto out;
++    } 
++    
++    if(PageTransHuge(target_page) || PageHuge(target_page)) {
++        pr_info("The Page @PFN : %#lx is HP or THP\n", pfn);
++		rv = migrate_huge(target_page);
++    }
++    else {
++        rv = migrate_normal(target_page);
++    }
++
++out:
++    return rv;
++
++}
++
++EXPORT_SYMBOL(bitflip_migrate);
+diff --git a/mm/cof_util.c b/mm/cof_util.c
+new file mode 100644
+index 000000000000..1c490d848165
+--- /dev/null
++++ b/mm/cof_util.c
+@@ -0,0 +1,100 @@
++#include <linux/cof_types.h>
++#include <linux/slab.h>
++#include <linux/mm.h>
++#include <linux/slub_def.h>
++#include <linux/log2.h>
++
++#include "internal.h"
++
++void *cof_page_address(struct kmem_cache *s, struct page *page)
++{
++	void *addr;
++	struct cof_page *cof_page;
++
++	//if(test_bit(PG_cof, &page->flags)) {
++	//	pr_info("SET BIT PG_cof for slab: %s\n", s->name);
++	//}
++	//pr_info("cof_page_address\n");
++	if(s) {
++		if(s->flags & SLAB_COF) {
++			//pr_info("Cache name: %s\n", s->name);
++			cof_page = (struct cof_page *) page;
++			addr = cof_page->vm_area->addr;
++		}
++		else {
++			addr = page_address(page);
++		}
++	}
++	else if(test_bit(PG_cof, &page->flags)) {
++		//pr_info("SLAB COF in cof_page_address\n");
++		cof_page = (struct cof_page *) page;
++		addr = cof_page->vm_area->addr;
++	}
++	else {
++		addr = page_address(page);
++	}
++
++	return addr;
++}
++
++struct page *cof_virt_to_head_page(struct kmem_cache *s, const void *x)
++{
++	struct vm_struct *vm_area;
++	
++	if(!s) {
++		if(is_vmalloc_addr(x)) {
++			//pr_info("is_vmalloc_addr -- cof_virt_to_head_page\n");
++			vm_area = find_vm_area(x);
++			return vm_area->cof_page;
++		}
++		else {
++			//pr_info("NOT vmalloc_addr -- cof_virt_to_head_page\n");
++			return virt_to_head_page(x);
++		}
++	}
++	else if(s->flags & SLAB_COF) {
++		//pr_info("SLAB COF in cof_virt_to_head_page -- cache: %s\n", s->name);
++		vm_area = find_vm_area(x);
++		return vm_area->cof_page;
++	}
++	else {
++		//pr_info("NOT SLAB_COF cof_virt_to_head_page\n");
++		return virt_to_head_page(x);
++	}
++}
++EXPORT_SYMBOL(cof_virt_to_head_page);
++
++void cof_free_pages(struct kmem_cache *s, struct page *page)
++{
++	struct cof_page *cof_page;
++	struct vm_struct *vm_area;
++
++	if(s->flags & SLAB_COF || test_bit(PG_cof, &page->flags)) {
++		//pr_info("Freeing COF Slab\n");
++		cof_page = (struct cof_page *) page;
++		vm_area = cof_page->vm_area;
++		clear_bit(PG_cof, &cof_page->page.flags);
++		vfree(vm_area->addr);
++		kfree(cof_page);
++	}
++	else {
++		__free_pages(page, compound_order(page));
++	}
++
++}
++
++const unsigned int cof_compound_order(struct kmem_cache *s, struct page *page)
++{
++	struct cof_page *cof_page;
++	struct vm_struct *vm_area;
++
++	if(s->flags & SLAB_COF) {
++		cof_page = (struct cof_page *) page;
++		vm_area = cof_page->vm_area;
++		return ilog2(vm_area->nr_pages);
++	}
++	else {
++		return compound_order(page);
++	}
++}
++
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index b45a95363a84..1ce446ee51b3 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -95,7 +95,7 @@ struct hugepage_subpool *hugepage_new_subpool(struct hstate *h, long max_hpages,
+ {
+ 	struct hugepage_subpool *spool;
+ 
+-	spool = kzalloc(sizeof(*spool), GFP_KERNEL);
++	spool = kzalloc(sizeof(*spool), GFP_KERNEL | ___GFP_COF);
+ 	if (!spool)
+ 		return NULL;
+ 
+@@ -377,7 +377,7 @@ static long region_chg(struct resv_map *resv, long f, long t)
+ 		resv->adds_in_progress--;
+ 		spin_unlock(&resv->lock);
+ 
+-		trg = kmalloc(sizeof(*trg), GFP_KERNEL);
++		trg = kmalloc(sizeof(*trg), GFP_KERNEL | ___GFP_COF);
+ 		if (!trg) {
+ 			kfree(nrg);
+ 			return -ENOMEM;
+@@ -401,7 +401,7 @@ static long region_chg(struct resv_map *resv, long f, long t)
+ 		if (!nrg) {
+ 			resv->adds_in_progress--;
+ 			spin_unlock(&resv->lock);
+-			nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
++			nrg = kmalloc(sizeof(*nrg), GFP_KERNEL | ___GFP_COF);
+ 			if (!nrg)
+ 				return -ENOMEM;
+ 
+@@ -520,7 +520,7 @@ static long region_del(struct resv_map *resv, long f, long t)
+ 
+ 			if (!nrg) {
+ 				spin_unlock(&resv->lock);
+-				nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
++				nrg = kmalloc(sizeof(*nrg), GFP_KERNEL | ___GFP_COF);
+ 				if (!nrg)
+ 					return -ENOMEM;
+ 				goto retry;
+@@ -697,8 +697,8 @@ static void set_vma_private_data(struct vm_area_struct *vma,
+ 
+ struct resv_map *resv_map_alloc(void)
+ {
+-	struct resv_map *resv_map = kmalloc(sizeof(*resv_map), GFP_KERNEL);
+-	struct file_region *rg = kmalloc(sizeof(*rg), GFP_KERNEL);
++	struct resv_map *resv_map = kmalloc(sizeof(*resv_map), GFP_KERNEL | ___GFP_COF);
++	struct file_region *rg = kmalloc(sizeof(*rg), GFP_KERNEL | ___GFP_COF);
+ 
+ 	if (!resv_map || !rg) {
+ 		kfree(resv_map);
+@@ -2248,7 +2248,7 @@ static void __init hugetlb_hstate_alloc_pages(struct hstate *h)
+ 		 * time, we are likely in bigger trouble.
+ 		 */
+ 		node_alloc_noretry = kmalloc(sizeof(*node_alloc_noretry),
+-						GFP_KERNEL);
++						GFP_KERNEL | ___GFP_COF);
+ 	} else {
+ 		/* allocations done at boot time */
+ 		node_alloc_noretry = NULL;
+@@ -2930,7 +2930,7 @@ static int __init hugetlb_init(void)
+ #endif
+ 	hugetlb_fault_mutex_table =
+ 		kmalloc_array(num_fault_mutexes, sizeof(struct mutex),
+-			      GFP_KERNEL);
++			      GFP_KERNEL | ___GFP_COF);
+ 	BUG_ON(!hugetlb_fault_mutex_table);
+ 
+ 	for (i = 0; i < num_fault_mutexes; i++)
+diff --git a/mm/internal.h b/mm/internal.h
+index 0d5f720c75ab..1dc8a906ce1c 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -21,7 +21,7 @@
+ #define GFP_RECLAIM_MASK (__GFP_RECLAIM|__GFP_HIGH|__GFP_IO|__GFP_FS|\
+ 			__GFP_NOWARN|__GFP_RETRY_MAYFAIL|__GFP_NOFAIL|\
+ 			__GFP_NORETRY|__GFP_MEMALLOC|__GFP_NOMEMALLOC|\
+-			__GFP_ATOMIC)
++			__GFP_ATOMIC | ___GFP_COF) //cof
+ 
+ /* The GFP flags allowed during early boot */
+ #define GFP_BOOT_MASK (__GFP_BITS_MASK & ~(__GFP_RECLAIM|__GFP_IO|__GFP_FS))
+diff --git a/mm/list_lru.c b/mm/list_lru.c
+index 0f1f6b06b7f3..917e80901bff 100644
+--- a/mm/list_lru.c
++++ b/mm/list_lru.c
+@@ -124,11 +124,20 @@ list_lru_from_kmem(struct list_lru_node *nlru, void *ptr,
+ 
+ bool list_lru_add(struct list_lru *lru, struct list_head *item)
+ {
+-	int nid = page_to_nid(virt_to_page(item));
+-	struct list_lru_node *nlru = &lru->node[nid];
++	//pr_info("IN LIST_LRU_ADD\n");
++	int nid;// = page_to_nid(virt_to_page(item));
++	//pr_info("NID = %d\n", nid);
++	struct list_lru_node *nlru;// = &lru->node[nid];
+ 	struct mem_cgroup *memcg;
+ 	struct list_lru_one *l;
+-
++	if(is_vmalloc_addr(item)) {
++		//pr_info("LIST_ADD_LRU: vmalloc_addr\n");
++		nid = page_to_nid(vmalloc_to_page(item));
++	}
++	else {
++		nid = page_to_nid(virt_to_page(item));
++	}
++	nlru = &lru->node[nid];
+ 	spin_lock(&nlru->lock);
+ 	if (list_empty(item)) {
+ 		l = list_lru_from_kmem(nlru, item, &memcg);
+@@ -148,10 +157,19 @@ EXPORT_SYMBOL_GPL(list_lru_add);
+ 
+ bool list_lru_del(struct list_lru *lru, struct list_head *item)
+ {
+-	int nid = page_to_nid(virt_to_page(item));
+-	struct list_lru_node *nlru = &lru->node[nid];
++	int nid;//= page_to_nid(virt_to_page(item));
++	struct list_lru_node *nlru;// = &lru->node[nid];
+ 	struct list_lru_one *l;
+ 
++	if(is_vmalloc_addr(item)) {
++		//pr_info("LIST_ADD_LRU: vmalloc_addr\n");
++		nid = page_to_nid(vmalloc_to_page(item));
++	}
++	else {
++		nid = page_to_nid(virt_to_page(item));
++	}
++	nlru = &lru->node[nid];
++
+ 	spin_lock(&nlru->lock);
+ 	if (!list_empty(item)) {
+ 		l = list_lru_from_kmem(nlru, item, NULL);
+@@ -346,7 +364,7 @@ static int __memcg_init_list_lru_node(struct list_lru_memcg *memcg_lrus,
+ 	for (i = begin; i < end; i++) {
+ 		struct list_lru_one *l;
+ 
+-		l = kmalloc(sizeof(struct list_lru_one), GFP_KERNEL);
++		l = kmalloc(sizeof(struct list_lru_one), GFP_KERNEL | ___GFP_COF);
+ 		if (!l)
+ 			goto fail;
+ 
+@@ -611,7 +629,7 @@ int __list_lru_init(struct list_lru *lru, bool memcg_aware,
+ #endif
+ 	memcg_get_cache_ids();
+ 
+-	lru->node = kcalloc(nr_node_ids, sizeof(*lru->node), GFP_KERNEL);
++	lru->node = kcalloc(nr_node_ids, sizeof(*lru->node), GFP_KERNEL | ___GFP_COF);
+ 	if (!lru->node)
+ 		goto out;
+ 
+diff --git a/mm/memory.c b/mm/memory.c
+index b1ca51a079f2..dbbf2cc307e6 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -409,6 +409,9 @@ int __pte_alloc(struct mm_struct *mm, pmd_t *pmd)
+ 	if (!new)
+ 		return -ENOMEM;
+ 
++	new->pt_mm = (unsigned long) pmd | 0x1; //cof
++    	set_bit(PG_ptp, &new->flags);
++    	//pr_info("pte_alloc\n");
+ 	/*
+ 	 * Ensure all pte setup (eg. pte page lock and page clearing) are
+ 	 * visible before the pte is made visible to other CPUs by being
+@@ -4032,9 +4035,15 @@ EXPORT_SYMBOL_GPL(handle_mm_fault);
+  */
+ int __p4d_alloc(struct mm_struct *mm, pgd_t *pgd, unsigned long address)
+ {
++	struct page *page;
+ 	p4d_t *new = p4d_alloc_one(mm, address);
+ 	if (!new)
+ 		return -ENOMEM;
++	
++	page = virt_to_page(new);                                                                         
++    	page->pt_mm = (unsigned long) pgd | 0x1;
++    	set_bit(PG_ptp, &page->flags);
++    	//pr_info("__p4d_alloc\n");
+ 
+ 	smp_wmb(); /* See comment in __pte_alloc */
+ 
+@@ -4055,11 +4064,15 @@ int __p4d_alloc(struct mm_struct *mm, pgd_t *pgd, unsigned long address)
+  */
+ int __pud_alloc(struct mm_struct *mm, p4d_t *p4d, unsigned long address)
+ {
++	struct page *page;
+ 	pud_t *new = pud_alloc_one(mm, address);
+ 	if (!new)
+ 		return -ENOMEM;
+-
++	page = virt_to_page(new);
++    	page->pt_mm = (unsigned long) p4d | 0x1;
+ 	smp_wmb(); /* See comment in __pte_alloc */
++	set_bit(PG_ptp, &(page->flags));
++    	//pr_info("__pud_alloc\n");
+ 
+ 	spin_lock(&mm->page_table_lock);
+ #ifndef __ARCH_HAS_5LEVEL_HACK
+@@ -4087,10 +4100,16 @@ int __pud_alloc(struct mm_struct *mm, p4d_t *p4d, unsigned long address)
+  */
+ int __pmd_alloc(struct mm_struct *mm, pud_t *pud, unsigned long address)
+ {
++	struct page *page;
+ 	spinlock_t *ptl;
+ 	pmd_t *new = pmd_alloc_one(mm, address);
+ 	if (!new)
+ 		return -ENOMEM;
++    	
++	page = virt_to_page(new);
++    	page->pt_mm = (unsigned long) pud | 0x1;
++    	set_bit(PG_ptp, &(page->flags));
++    	//pr_info("__pmd_alloc\n");
+ 
+ 	smp_wmb(); /* See comment in __pte_alloc */
+ 
+diff --git a/mm/migrate_ptpages.c b/mm/migrate_ptpages.c
+new file mode 100644
+index 000000000000..237480aebd82
+--- /dev/null
++++ b/mm/migrate_ptpages.c
+@@ -0,0 +1,83 @@
++#include <linux/migrate_ptpages.h>                                                                    
++#include <linux/mm.h>
++#include <linux/printk.h>
++#include <linux/string.h>
++#include <asm/pgtable.h>
++#include <linux/pagewalk.h>
++
++#define MAX_PHYS_ADDR ((1UL << 39) - 1)
++#define FLAGS_MASK ((1UL << 11) - 1)
++
++unsigned long get_pfn(unsigned long pte) {
++    return (pte & MAX_PHYS_ADDR) >> 12;// & ~FLAGS_MASK;
++}
++
++unsigned long get_prot_val(unsigned long pte) {
++    return pte & FLAGS_MASK;
++}
++
++int migrate_ptpage(struct page *page)
++{
++
++    struct mm_struct *mm;
++    unsigned long *pt_parent_ptep, parent_pfn;
++    struct page *new_page;
++    u8 *page_addr;
++    int rv;
++    unsigned long i;
++    rv = 0;
++    page_addr = NULL;
++    mm = NULL;
++
++    page_addr = page_address(page);
++
++
++    if((unsigned long) page->pt_mm & 0x1) {
++        pt_parent_ptep =  (unsigned long*) ((unsigned long) page->pt_mm - 1);
++    }
++    else {
++        mm = page->pt_mm;
++    }
++
++    pr_info("mig ptpage mm=%px\n", mm);
++    if(mm) { //pgd case
++        spin_lock(&mm->page_table_lock);
++        new_page = alloc_page(GFP_KERNEL | __GFP_ZERO);
++        if(new_page == NULL) {
++            pr_err("could not allocate new_page");
++            rv = -1;
++            goto out;
++        }
++        memcpy(page_address(new_page), page_addr, PAGE_SIZE);
++        memcpy(new_page, page, sizeof(struct page));
++        mm->pgd = page_address(new_page);
++        spin_unlock(&mm->page_table_lock);
++    }
++    else {
++        struct page *pt_parent_page = virt_to_page(pt_parent_ptep);
++        pr_info("scanning parent pte @ %px\n", pt_parent_ptep);
++        pr_info("parent struct page @ %px\n", pt_parent_page);
++        spin_lock(&page->ptl);
++        spin_lock(&pt_parent_page->ptl);
++
++        new_page = alloc_page(GFP_KERNEL | __GFP_ZERO);
++        if(new_page == NULL) {
++            pr_err("could not allocate new_page");
++            rv = -1;
++            goto out;
++        }
++        memcpy(page_address(new_page), page_addr, PAGE_SIZE);
++        memcpy(new_page, page, sizeof(struct page));                
++        pr_info("old pte in parent: %lx\n", *pt_parent_ptep);
++        *pt_parent_ptep = ((page_to_pfn(new_page) << 12) | get_prot_val(*pt_parent_ptep));
++        pr_info("new pte in parent: %lx\n", *pt_parent_ptep);
++        
++        spin_unlock(&pt_parent_page->ptl);
++        spin_unlock(&page->ptl);
++        SetPageHWPoison(page);
++        put_page(page);
++    }
++out:
++    return rv;
++}
++
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index f391c0c4ed1d..85aa61046d55 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -15,6 +15,7 @@
+  *          (lots of bits borrowed from Ingo Molnar & Andrew Morton)
+  */
+ 
++#include <linux/printk.h>
+ #include <linux/stddef.h>
+ #include <linux/mm.h>
+ #include <linux/highmem.h>
+@@ -69,6 +70,7 @@
+ #include <linux/nmi.h>
+ #include <linux/psi.h>
+ 
++#include <asm/pgalloc.h>
+ #include <asm/sections.h>
+ #include <asm/tlbflush.h>
+ #include <asm/div64.h>
+@@ -4800,6 +4802,9 @@ unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order)
+ 	page = alloc_pages(gfp_mask & ~__GFP_HIGHMEM, order);
+ 	if (!page)
+ 		return 0;
++	if(gfp_mask & GFP_PGTABLE_USER) {
++        	set_bit(PG_ptp, &page->flags);                                                                
++        }
+ 	return (unsigned long) page_address(page);
+ }
+ EXPORT_SYMBOL(__get_free_pages);
+@@ -8142,18 +8147,18 @@ void *__init alloc_large_system_hash(const char *tablename,
+ 			else
+ 				table = memblock_alloc_raw(size,
+ 							   SMP_CACHE_BYTES);
+-		} else if (get_order(size) >= MAX_ORDER || hashdist) {
++		} else { // if (get_order(size) >= MAX_ORDER || hashdist) {
+ 			table = __vmalloc(size, gfp_flags, PAGE_KERNEL);
+ 			virt = true;
+-		} else {
++		} //else {
+ 			/*
+ 			 * If bucketsize is not a power-of-two, we may free
+ 			 * some pages at the end of hash table which
+ 			 * alloc_pages_exact() automatically does
+ 			 */
+-			table = alloc_pages_exact(size, gfp_flags);
+-			kmemleak_alloc(table, size, 1, gfp_flags);
+-		}
++		//	table = alloc_pages_exact(size, gfp_flags);
++		//	kmemleak_alloc(table, size, 1, gfp_flags);
++		//}
+ 	} while (!table && size > PAGE_SIZE && --log2qty);
+ 
+ 	if (!table)
+@@ -8374,7 +8379,7 @@ static int __alloc_contig_migrate_range(struct compact_control *cc,
+  */
+ int alloc_contig_range(unsigned long start, unsigned long end,
+ 		       unsigned migratetype, gfp_t gfp_mask)
+-{
++{	
+ 	unsigned long outer_start, outer_end;
+ 	unsigned int order;
+ 	int ret = 0;
+@@ -8389,6 +8394,10 @@ int alloc_contig_range(unsigned long start, unsigned long end,
+ 		.gfp_mask = current_gfp_context(gfp_mask),
+ 	};
+ 	INIT_LIST_HEAD(&cc.migratepages);
++	
++	//pr_info("[COF++] Total Pages Alloc'd: %lu\n Stack Trace: \n", (end - start));
++	//dump_stack();
++
+ 
+ 	/*
+ 	 * What we do here is we mark all pageblocks in range as
+diff --git a/mm/slab.h b/mm/slab.h
+index b2b01694dc43..00e6405f0cea 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -109,7 +109,7 @@ struct memcg_cache_params {
+ #include <linux/kmemleak.h>
+ #include <linux/random.h>
+ #include <linux/sched/mm.h>
+-
++#include <linux/cof_types.h>
+ /*
+  * State of the slab allocator.
+  *
+@@ -192,7 +192,7 @@ static inline slab_flags_t kmem_cache_flags(unsigned int object_size,
+ /* Legal flag mask for kmem_cache_create(), for various configurations */
+ #define SLAB_CORE_FLAGS (SLAB_HWCACHE_ALIGN | SLAB_CACHE_DMA | \
+ 			 SLAB_CACHE_DMA32 | SLAB_PANIC | \
+-			 SLAB_TYPESAFE_BY_RCU | SLAB_DEBUG_OBJECTS )
++			 SLAB_TYPESAFE_BY_RCU | SLAB_DEBUG_OBJECTS | SLAB_COF )
+ 
+ #if defined(CONFIG_DEBUG_SLAB)
+ #define SLAB_DEBUG_FLAGS (SLAB_RED_ZONE | SLAB_POISON | SLAB_STORE_USER)
+@@ -271,7 +271,7 @@ int __kmem_cache_alloc_bulk(struct kmem_cache *, gfp_t, size_t, void **);
+ 
+ static inline int cache_vmstat_idx(struct kmem_cache *s)
+ {
+-	return (s->flags & SLAB_RECLAIM_ACCOUNT) ?
++	return (/*s->flags & SLAB_RECLAIM_ACCOUNT || */ s->flags & SLAB_COF) ?
+ 		NR_SLAB_RECLAIMABLE : NR_SLAB_UNRECLAIMABLE;
+ }
+ 
+@@ -469,7 +469,7 @@ static inline struct kmem_cache *virt_to_cache(const void *obj)
+ {
+ 	struct page *page;
+ 
+-	page = virt_to_head_page(obj);
++	page = cof_virt_to_head_page(NULL, obj);
+ 	if (WARN_ONCE(!PageSlab(page), "%s: Object is not a Slab page!\n",
+ 					__func__))
+ 		return NULL;
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index f9fb27b4c843..310815cd40bc 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -1135,7 +1135,9 @@ struct kmem_cache *kmalloc_slab(size_t size, gfp_t flags)
+ 			return NULL;
+ 		index = fls(size - 1);
+ 	}
+-
++	
++	//if(kmalloc_type(flags) == KMALLOC_COF)
++		//pr_info("KMALLOC_COF\n");
+ 	return kmalloc_caches[kmalloc_type(flags)][index];
+ }
+ 
+@@ -1233,7 +1235,13 @@ new_kmalloc_cache(int idx, int type, slab_flags_t flags)
+ 		name = kmalloc_cache_name("kmalloc-rcl",
+ 						kmalloc_info[idx].size);
+ 		BUG_ON(!name);
+-	} else {
++	} 
++	else if(type == KMALLOC_COF) {
++		flags |= SLAB_COF;
++		name = kmalloc_cache_name("kmalloc-cof", kmalloc_info[idx].size);
++		BUG_ON(!name);
++	}
++	else {
+ 		name = kmalloc_info[idx].name;
+ 	}
+ 
+@@ -1251,7 +1259,7 @@ void __init create_kmalloc_caches(slab_flags_t flags)
+ {
+ 	int i, type;
+ 
+-	for (type = KMALLOC_NORMAL; type <= KMALLOC_RECLAIM; type++) {
++	for (type = KMALLOC_NORMAL; type <= KMALLOC_COF; type++) {
+ 		for (i = KMALLOC_SHIFT_LOW; i <= KMALLOC_SHIFT_HIGH; i++) {
+ 			if (!kmalloc_caches[type][i])
+ 				new_kmalloc_cache(i, type, flags);
+@@ -1300,12 +1308,26 @@ void *kmalloc_order(size_t size, gfp_t flags, unsigned int order)
+ 	void *ret = NULL;
+ 	struct page *page;
+ 
+-	flags |= __GFP_COMP;
+-	page = alloc_pages(flags, order);
+-	if (likely(page)) {
+-		ret = page_address(page);
+-		mod_node_page_state(page_pgdat(page), NR_SLAB_UNRECLAIMABLE,
+-				    1 << order);
++	if((flags & ___GFP_COF) == 0) {
++		pr_info("COF FLAG -> allocating with vmalloc()\n");
++		//dump_stack();
++		ret = vzalloc((1 << order) * PAGE_SIZE);
++		if(ret == NULL) {
++			pr_err("Couldn't back large alloc with vmalloc\n");
++		}
++		//vmalloc_sync_all();
++	}
++	else {	
++		pr_info("KMALLOC ORDER order = %d\n", order);
++		//dump_stack();
++		flags |= __GFP_COMP;
++		page = alloc_pages(flags, order);
++
++		if (likely(page)) {
++			ret = page_address(page);
++			mod_node_page_state(page_pgdat(page), NR_SLAB_UNRECLAIMABLE,
++				    	1 << order);
++		}
+ 	}
+ 	ret = kasan_kmalloc_large(ret, size, flags);
+ 	/* As ret might get tagged, call kmemleak hook after KASAN. */
+diff --git a/mm/slub.c b/mm/slub.c
+index e72e802fc569..77df59f82da3 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -39,6 +39,8 @@
+ 
+ #include "internal.h"
+ 
++#include <linux/cof_types.h>
++
+ /*
+  * Lock order:
+  *   1. slab_mutex (Global Mutex)
+@@ -226,6 +228,10 @@ static inline void memcg_propagate_slab_attrs(struct kmem_cache *s) { }
+ static inline void sysfs_slab_remove(struct kmem_cache *s) { }
+ #endif
+ 
++static unsigned atomic_pages_count = 0;
++static unsigned compound_pages_count = 0;
++static unsigned total_cmp_pages = 0;
++
+ static inline void stat(const struct kmem_cache *s, enum stat_item si)
+ {
+ #ifdef CONFIG_SLUB_STATS
+@@ -450,7 +456,7 @@ static inline bool cmpxchg_double_slab(struct kmem_cache *s, struct page *page,
+ static void get_map(struct kmem_cache *s, struct page *page, unsigned long *map)
+ {
+ 	void *p;
+-	void *addr = page_address(page);
++	void *addr = cof_page_address(s, page);
+ 
+ 	for (p = page->freelist; p; p = get_freepointer(s, p))
+ 		set_bit(slab_index(p, s, addr), map);
+@@ -513,7 +519,7 @@ static inline int check_valid_pointer(struct kmem_cache *s,
+ 	if (!object)
+ 		return 1;
+ 
+-	base = page_address(page);
++	base = cof_page_address(s, page);
+ 	object = kasan_reset_tag(object);
+ 	object = restore_red_left(s, object);
+ 	if (object < base || object >= base + page->objects * s->size ||
+@@ -647,7 +653,7 @@ static void slab_fix(struct kmem_cache *s, char *fmt, ...)
+ static void print_trailer(struct kmem_cache *s, struct page *page, u8 *p)
+ {
+ 	unsigned int off;	/* Offset of last byte */
+-	u8 *addr = page_address(page);
++	u8 *addr = cof_page_address(s, page);
+ 
+ 	print_tracking(s, p);
+ 
+@@ -828,7 +834,7 @@ static int slab_pad_check(struct kmem_cache *s, struct page *page)
+ 	if (!(s->flags & SLAB_POISON))
+ 		return 1;
+ 
+-	start = page_address(page);
++	start = cof_page_address(s, page);
+ 	length = page_size(page);
+ 	end = start + length;
+ 	remainder = length % s->size;
+@@ -918,7 +924,7 @@ static int check_slab(struct kmem_cache *s, struct page *page)
+ 		return 0;
+ 	}
+ 
+-	maxobj = order_objects(compound_order(page), s->size);
++	maxobj = order_objects(cof_compound_order(s, page), s->size);
+ 	if (page->objects > maxobj) {
+ 		slab_err(s, page, "objects %u > max %u",
+ 			page->objects, maxobj);
+@@ -968,7 +974,7 @@ static int on_freelist(struct kmem_cache *s, struct page *page, void *search)
+ 		nr++;
+ 	}
+ 
+-	max_objects = order_objects(compound_order(page), s->size);
++	max_objects = order_objects(cof_compound_order(s, page), s->size);
+ 	if (max_objects > MAX_OBJS_PER_PAGE)
+ 		max_objects = MAX_OBJS_PER_PAGE;
+ 
+@@ -1489,18 +1495,53 @@ static inline struct page *alloc_slab_page(struct kmem_cache *s,
+ 		gfp_t flags, int node, struct kmem_cache_order_objects oo)
+ {
+ 	struct page *page;
++	struct cof_page *cof_page;
+ 	unsigned int order = oo_order(oo);
++	void *v_addr;
++	uint64_t n_pages;
++	gfp_t alloc_flags;
++	
++	alloc_flags = __GFP_ZERO | GFP_KERNEL;	
++	
++	
++	if(flags & __GFP_ATOMIC) {
++		alloc_flags |= __GFP_ATOMIC;
++	}	
++
++
++	if(flags & ___GFP_COF) {
++		n_pages = 1 << order;
++		v_addr = __vmalloc(PAGE_SIZE * n_pages, alloc_flags, PAGE_KERNEL);
++		if(!v_addr) {
++			pr_err("vmalloc() failed for n_pages %lu\n", n_pages);
++		}
+ 
++		cof_page = kzalloc(sizeof(struct cof_page), GFP_KERNEL);
++		cof_page->vm_area = find_vm_area(v_addr);
++		cof_page->vm_area->cof_page = cof_page;
++		page = (struct page *) cof_page;
++		page->flags = cof_page->vm_area->pages[0]->flags;
++		set_bit(PG_cof, &page->flags);
++		//pr_info("page ptr = %p, vm_area ptr = %p\n", page, cof_page->vm_area);
++		//pr_info("Used vmalloc() backend for SLUB\n");
++		if(page && charge_slab_page(cof_page->vm_area->pages[0], flags, order, s)) {
++			//pr_warn("charge_slab failed\n");
++			page = NULL;
++		}
++		goto out;
++	}
++buddy:
+ 	if (node == NUMA_NO_NODE)
+ 		page = alloc_pages(flags, order);
+ 	else
+ 		page = __alloc_pages_node(node, flags, order);
+-
++charge:
+ 	if (page && charge_slab_page(page, flags, order, s)) {
++		pr_warn("charge_slab failed\n");
+ 		__free_pages(page, order);
+ 		page = NULL;
+ 	}
+-
++out:
+ 	return page;
+ }
+ 
+@@ -1582,7 +1623,7 @@ static bool shuffle_freelist(struct kmem_cache *s, struct page *page)
+ 	pos = get_random_int() % freelist_count;
+ 
+ 	page_limit = page->objects * s->size;
+-	start = fixup_red_left(s, page_address(page));
++	start = fixup_red_left(s, cof_page_address(s, page));
+ 
+ 	/* First entry is used as the base of the freelist */
+ 	cur = next_freelist_entry(s, page, &pos, start, page_limit,
+@@ -1660,7 +1701,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+ 
+ 	kasan_poison_slab(page);
+ 
+-	start = page_address(page);
++	start = cof_page_address(s, page);
+ 
+ 	setup_page_debug(s, page, start);
+ 
+@@ -1709,14 +1750,14 @@ static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
+ 
+ static void __free_slab(struct kmem_cache *s, struct page *page)
+ {
+-	int order = compound_order(page);
++	int order = cof_compound_order(s, page);
+ 	int pages = 1 << order;
+ 
+ 	if (s->flags & SLAB_CONSISTENCY_CHECKS) {
+ 		void *p;
+ 
+ 		slab_pad_check(s, page);
+-		for_each_object(p, s, page_address(page),
++		for_each_object(p, s, cof_page_address(s, page),
+ 						page->objects)
+ 			check_object(s, page, p, SLUB_RED_INACTIVE);
+ 	}
+@@ -1728,7 +1769,8 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
+ 	if (current->reclaim_state)
+ 		current->reclaim_state->reclaimed_slab += pages;
+ 	uncharge_slab_page(page, order, s);
+-	__free_pages(page, order);
++	//__free_pages(page, order);
++	cof_free_pages(s, page);	
+ }
+ 
+ static void rcu_free_slab(struct rcu_head *h)
+@@ -2051,7 +2093,6 @@ static void deactivate_slab(struct kmem_cache *s, struct page *page,
+ 		stat(s, DEACTIVATE_REMOTE_FREES);
+ 		tail = DEACTIVATE_TO_TAIL;
+ 	}
+-
+ 	/*
+ 	 * Stage one: Free all available per cpu objects back
+ 	 * to the page freelist while it is still frozen. Leave the
+@@ -2133,6 +2174,7 @@ static void deactivate_slab(struct kmem_cache *s, struct page *page,
+ 			 * slabs from diagnostic functions will not see
+ 			 * any frozen slabs.
+ 			 */
++
+ 			spin_lock(&n->list_lock);
+ 		}
+ 	}
+@@ -2541,7 +2583,6 @@ static void *___slab_alloc(struct kmem_cache *s, gfp_t gfpflags, int node,
+ {
+ 	void *freelist;
+ 	struct page *page;
+-
+ 	page = c->page;
+ 	if (!page)
+ 		goto new_slab;
+@@ -3017,7 +3058,7 @@ void kmem_cache_free(struct kmem_cache *s, void *x)
+ 	s = cache_from_obj(s, x);
+ 	if (!s)
+ 		return;
+-	slab_free(s, virt_to_head_page(x), x, NULL, 1, _RET_IP_);
++	slab_free(s, cof_virt_to_head_page(s, x), x, NULL, 1, _RET_IP_);
+ 	trace_kmem_cache_free(_RET_IP_, x);
+ }
+ EXPORT_SYMBOL(kmem_cache_free);
+@@ -3062,7 +3103,7 @@ int build_detached_freelist(struct kmem_cache *s, size_t size,
+ 	if (!object)
+ 		return 0;
+ 
+-	page = virt_to_head_page(object);
++	page = cof_virt_to_head_page(s, object);
+ 	if (!s) {
+ 		/* Handle kalloc'ed objects */
+ 		if (unlikely(!PageSlab(page))) {
+@@ -3092,7 +3133,7 @@ int build_detached_freelist(struct kmem_cache *s, size_t size,
+ 			continue; /* Skip processed objects */
+ 
+ 		/* df->page is always set at this point */
+-		if (df->page == virt_to_head_page(object)) {
++		if (df->page == cof_virt_to_head_page(s, object)) {
+ 			/* Opportunity build freelist */
+ 			set_freepointer(df->s, object, df->freelist);
+ 			df->freelist = object;
+@@ -3672,7 +3713,7 @@ static void list_slab_objects(struct kmem_cache *s, struct page *page,
+ 							const char *text)
+ {
+ #ifdef CONFIG_SLUB_DEBUG
+-	void *addr = page_address(page);
++	void *addr = cof_page_address(s, page);
+ 	void *p;
+ 	unsigned long *map = bitmap_zalloc(page->objects, GFP_ATOMIC);
+ 	if (!map)
+@@ -3789,12 +3830,13 @@ void *__kmalloc(size_t size, gfp_t flags)
+ 
+ 	if (unlikely(size > KMALLOC_MAX_CACHE_SIZE))
+ 		return kmalloc_large(size, flags);
+-
++	
+ 	s = kmalloc_slab(size, flags);
+ 
+ 	if (unlikely(ZERO_OR_NULL_PTR(s)))
+ 		return s;
+ 
++//	pr_info("%s\n", s->name);
+ 	ret = slab_alloc(s, flags, _RET_IP_);
+ 
+ 	trace_kmalloc(_RET_IP_, ret, size, s->size, flags);
+@@ -3936,13 +3978,23 @@ void kfree(const void *x)
+ {
+ 	struct page *page;
+ 	void *object = (void *)x;
+-
++	struct vm_struct *vm_area;
++	struct cof_page* cof_page;
+ 	trace_kfree(_RET_IP_, x);
+ 
+ 	if (unlikely(ZERO_OR_NULL_PTR(x)))
+ 		return;
++	
++	if(is_vmalloc_addr(x)) {
++		page = cof_virt_to_head_page(NULL, x);
++		if(page == NULL) { //kmalloc_order() allocation
++			pr_info("kfree() -- vmalloc_addr just vfree()\n");
++			vfree(x);
++			return;
++		}
++	}
+ 
+-	page = virt_to_head_page(x);
++	page = cof_virt_to_head_page(NULL, x);
+ 	if (unlikely(!PageSlab(page))) {
+ 		unsigned int order = compound_order(page);
+ 
+@@ -4387,7 +4439,7 @@ static int validate_slab(struct kmem_cache *s, struct page *page,
+ 						unsigned long *map)
+ {
+ 	void *p;
+-	void *addr = page_address(page);
++	void *addr = cof_page_address(s, page);
+ 
+ 	if (!check_slab(s, page) ||
+ 			!on_freelist(s, page, NULL))
+@@ -4597,7 +4649,7 @@ static void process_slab(struct loc_track *t, struct kmem_cache *s,
+ 		struct page *page, enum track_item alloc,
+ 		unsigned long *map)
+ {
+-	void *addr = page_address(page);
++	void *addr = cof_page_address(s, page);
+ 	void *p;
+ 
+ 	bitmap_zero(map, page->objects);
+@@ -4697,7 +4749,7 @@ static int list_locations(struct kmem_cache *s, char *buf,
+ static void __init resiliency_test(void)
+ {
+ 	u8 *p;
+-	int type = KMALLOC_NORMAL;
++	int type = KMALLOC_COF;
+ 
+ 	BUILD_BUG_ON(KMALLOC_MIN_SIZE > 16 || KMALLOC_SHIFT_HIGH < 10);
+ 
+diff --git a/mm/util.c b/mm/util.c
+index 3ad6db9a722e..7d70e7a3ea9a 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -569,6 +569,9 @@ void *kvmalloc_node(size_t size, gfp_t flags, int node)
+ 	 */
+ 	if (ret || size <= PAGE_SIZE)
+ 		return ret;
++	
++	if(flags & ___GFP_COF)
++		flags &= ~___GFP_COF;
+ 
+ 	return __vmalloc_node_flags_caller(size, node, flags,
+ 			__builtin_return_address(0));
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index a3c70e275f4e..f0489a8a0716 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -34,6 +34,12 @@
+ #include <linux/llist.h>
+ #include <linux/bitops.h>
+ #include <linux/rbtree_augmented.h>
++#include <linux/gfp.h> //cof
++#include <asm/pgtable.h>
++#include <linux/mmu_notifier.h>
++#include <linux/migrate.h>
++#include <linux/pseudo_fs.h>
++#include <linux/mount.h>
+ 
+ #include <linux/uaccess.h>
+ #include <asm/tlbflush.h>
+@@ -324,6 +330,271 @@ unsigned long vmalloc_to_pfn(const void *vmalloc_addr)
+ EXPORT_SYMBOL(vmalloc_to_pfn);
+ 
+ 
++/*
++ * vmalloc_migration stuff cof.
++ */
++
++#define VMALLOC_MIG_MAGIC 0x1DEADFAD
++static u8 vmalloc_mig_on = 0;
++static int vmalloc_init_fs_context(struct fs_context *fc)
++{
++	return init_pseudo(fc, VMALLOC_MIG_MAGIC) ? 0 : -ENOMEM;
++}
++
++struct file_system_type vmalloc_fs = {
++	.name = "vmallocmigfs",
++	.init_fs_context = vmalloc_init_fs_context,
++	.kill_sb = kill_anon_super,
++};
++//
++static struct vfsmount *vmalloc_mig_mnt;
++
++struct vmalloc_mig_struct vmalloc_mig;
++
++static const struct address_space_operations vmalloc_aops = {
++	.isolate_page = vmalloc_mig_isolate,
++	.migratepage = vmalloc_mig_migrate,
++	.putback_page = vmalloc_mig_putback,
++};
++
++
++static inline unsigned long get_vmalloc_addr_offset(const struct vm_struct *vm, const unsigned idx)
++{
++	return ((unsigned long) vm->addr) + (idx * PAGE_SIZE);
++}
++
++__must_check struct vm_struct *page_to_vm_struct(struct page *page)
++{
++	return (struct vm_struct *) page_private(page);
++}
++
++pte_t *walk_page_table_get_pte(struct mm_struct *mm, const unsigned long addr)
++{
++	pgd_t *pgd;
++	p4d_t *p4d;
++	pud_t *pud;
++	pmd_t *pmd;
++	pte_t *pte;
++	spin_lock(&mm->page_table_lock);
++	pgd = pgd_offset(mm, addr);
++	if(pgd_none(*pgd) || unlikely(pgd_bad(*pgd))) {
++		pr_info("PGD BAD\n");
++		goto out_bad;
++	}
++	p4d = p4d_offset(pgd, addr);
++	if(p4d_none(*p4d) || unlikely(p4d_bad(*p4d))) {
++		pr_info("P4D BAD\n");
++		goto out_bad;
++	}
++	pud = pud_offset(p4d, addr);
++	if(pud_none(*pud) || unlikely(pud_bad(*pud))) {
++		pr_info("PUD BAD\n");
++		goto out_bad;
++	}
++	pmd = pmd_offset(pud, addr);
++	if(pmd_none(*pmd) || unlikely(pmd_bad(*pmd))) {
++		pr_info("PMD BAD\n");
++		goto out_bad;
++	}
++
++	pte = pte_offset_map(pmd, addr);
++	
++	spin_unlock(&mm->page_table_lock);
++	pte_unmap(pte);
++	return pte;
++
++out_bad:
++	spin_unlock(&mm->page_table_lock);
++	return NULL;
++}
++
++int set_vmalloc_page_movable(struct page *page, struct vmalloc_mig_struct *vmalloc_mig)
++{
++      int rv = 0;
++      if(!trylock_page(page)) {
++      	pr_err("Cannot lock page\n");
++      	rv = -1;
++      	goto out;
++      }
++      __SetPageMovable(page, vmalloc_mig->inode->i_mapping);
++      unlock_page(page);
++out:	
++      return rv;
++}
++
++
++
++
++
++
++int vmalloc_mig_mount(void)
++{
++	int rv = 0;
++
++	vmalloc_mig_mnt = kern_mount(&vmalloc_fs);
++	if(!vmalloc_mig_mnt) {
++		pr_err("kern_mount for vfs failed!\n");
++		rv = -1;
++	}
++
++	return rv;
++}
++
++void vmalloc_mig_unmount(void)
++{
++	kern_unmount(vmalloc_mig_mnt);
++}
++
++bool vmalloc_mig_isolate(struct page *page, isolate_mode_t mode)
++{
++	bool rv;
++	rv = true;
++	/*
++	 * If page has not been set to movable, bail out and crash.
++	 * If page has already been isolated, bail out and crash.
++	 */
++	VM_BUG_ON_PAGE(PageIsolated(page), page);
++	VM_BUG_ON_PAGE(!PageMovable(page), page);
++
++	SetPageReclaim(page); // set isolation flag
++
++	return rv;
++}
++
++int vmalloc_mig_migrate(struct address_space *mapping, struct page *new_page, struct page *page, enum migrate_mode mode)
++{
++	int rv;
++	unsigned i;
++	unsigned long page_addr;
++	void *src_addr, *dst_addr;
++	pte_t *pte, new_pte;
++	struct mm_struct *init_mm_alias;
++	struct vm_struct *vm;
++
++	rv = MIGRATEPAGE_SUCCESS;
++	pr_info("Vmalloc migration\n");
++	page_addr = 0;
++	if(!page || !new_page) {
++		pr_err("Invalid page for migration or invalid destination page\n");
++		rv = -1;
++		goto out;
++	}
++
++	VM_BUG_ON_PAGE(!PageMovable(page), page);
++	VM_BUG_ON_PAGE(!PageIsolated(page), page);
++
++	vm = page_to_vm_struct(page);
++	
++	init_mm_alias = (struct mm_struct *) kallsyms_lookup_name("init_mm");
++	if(!init_mm_alias) {
++		pr_err("Can't find init_mm symbol\n");
++		rv = -1;
++		goto out;
++	}
++
++	/*
++	 * Get correct address of underlying page.
++	 */
++	for(i = 0; i < vm->nr_pages; ++i) {
++		if(page == vm->pages[i]) {
++			page_addr = get_vmalloc_addr_offset(vm, i);
++			if(!page_addr) {
++				pr_err("Can't get Page Addr\n");
++				rv = -1;
++				goto out;
++			} 
++		}
++	}
++
++	pte = walk_page_table_get_pte(init_mm_alias, page_addr); // get PTE for old page
++	if(!pte) {
++		pr_err("Cannot find PTE for page\n");
++		rv = -1;
++		goto out;
++	}
++	pr_info("OLD PFN PTE: %lx @ PTE: %lx\n", pte_pfn(*pte), pte->pte);
++	//dump_pagetable_fp(page_addr);
++
++	/*
++	 * Copy page data to the new page.
++	 * Use kmap to get the page virt address
++	 * Zero out the contents of the old page.
++	 */ 
++	src_addr = kmap_atomic(page);
++	dst_addr = kmap_atomic(new_page);
++	memcpy(dst_addr, src_addr, PAGE_SIZE);
++	memset(src_addr, 0, PAGE_SIZE);
++	kunmap_atomic(dst_addr);
++	kunmap_atomic(src_addr);
++
++	/*
++	 * Copy old page metadata to the new page and invalidate old
++	 */
++	new_page->index = page->index;
++	set_page_private(new_page, (unsigned long) vm);
++	__SetPageMovable(new_page, page_mapping(page));
++	page->mapping = NULL;
++	page->private = 0;
++
++	/*
++	 * Replace underlying page in the vm_struct.
++	 */
++	for(i = 0; i < vm->nr_pages; ++i) {
++		if(page == vm->pages[i]) {
++			//pr_info("[COF++] FOUND PAGE IN VM_STRUCT at index %u\n", i);
++			vm->pages[i] = new_page;
++		}
++	}
++
++	get_page(new_page); //increase the refcount of the page
++
++	
++	spin_lock(&init_mm_alias->page_table_lock); // grab ptable lock
++	
++	if(!pte) {
++		spin_unlock(&init_mm_alias->page_table_lock);
++		rv = -EBUSY;
++		goto out;
++	}
++
++	new_pte = mk_pte(new_page, pte_pgprot(*pte)); // get PTE for new page
++	if(pte_none(new_pte)) {
++		pr_err("Cannot get new PTE\n");
++		rv = -1;
++		goto out;
++	}
++	set_pte_at(init_mm_alias, page_addr, pte, new_pte); // Replace PTEs
++	__flush_tlb_one_kernel(page_addr); //flush TLB entry for that addr
++	pte_unmap(pte);
++	pte_unmap(&new_pte);
++	spin_unlock(&init_mm_alias->page_table_lock); //release page table lock
++
++	pr_info("NEW PFN PTE: %lx @ PTE: %lx\n", pte_pfn(new_pte), new_pte.pte);
++	//dump_pagetable_fp(page_addr);
++
++out:
++	return rv;
++}
++
++void vmalloc_mig_putback(struct page *page)
++{
++	
++}
++
++int setup_migration(struct vmalloc_mig_struct *vmalloc_mig)
++{
++	int rv = 0;
++	vmalloc_mig->inode = alloc_anon_inode(vmalloc_mig_mnt->mnt_sb);
++	if(!vmalloc_mig->inode) {
++		pr_err("Can't allocate anon inode for vmalloc mig struct\n");
++		rv = -1;
++		goto out;
++	}
++	vmalloc_mig->inode->i_mapping->a_ops = &vmalloc_aops;
++out:
++	return rv;
++}
++
+ /*** Global kva allocator ***/
+ 
+ #define DEBUG_AUGMENT_PROPAGATE_CHECK 0
+@@ -1053,6 +1324,7 @@ static struct vmap_area *alloc_vmap_area(unsigned long size,
+ {
+ 	struct vmap_area *va, *pva;
+ 	unsigned long addr;
++	unsigned long lock_flags;
+ 	int purged = 0;
+ 
+ 	BUG_ON(!size);
+@@ -1077,31 +1349,34 @@ static struct vmap_area *alloc_vmap_area(unsigned long size,
+ 
+ retry:
+ 	/*
+-	 * Preload this CPU with one extra vmap_area object to ensure
+-	 * that we have it available when fit type of free area is
+-	 * NE_FIT_TYPE.
++	 * Preload this CPU with one extra vmap_area object. It is used
++	 * when fit type of free area is NE_FIT_TYPE. Please note, it
++	 * does not guarantee that an allocation occurs on a CPU that
++	 * is preloaded, instead we minimize the case when it is not.
++	 * It can happen because of cpu migration, because there is a
++	 * race until the below spinlock is taken.
+ 	 *
+ 	 * The preload is done in non-atomic context, thus it allows us
+ 	 * to use more permissive allocation masks to be more stable under
+-	 * low memory condition and high memory pressure.
++	 * low memory condition and high memory pressure. In rare case,
++	 * if not preloaded, GFP_NOWAIT is used.
+ 	 *
+-	 * Even if it fails we do not really care about that. Just proceed
+-	 * as it is. "overflow" path will refill the cache we allocate from.
++	 * Set "pva" to NULL here, because of "retry" path.
+ 	 */
+-	preempt_disable();
+-	if (!__this_cpu_read(ne_fit_preload_node)) {
+-		preempt_enable();
++	pva = NULL;
++
++	if (!this_cpu_read(ne_fit_preload_node))
++		/*
++		 * Even if it fails we do not really care about that.
++		 * Just proceed as it is. If needed "overflow" path
++		 * will refill the cache we allocate from.
++		 */
+ 		pva = kmem_cache_alloc_node(vmap_area_cachep, GFP_KERNEL, node);
+-		preempt_disable();
+ 
+-		if (__this_cpu_cmpxchg(ne_fit_preload_node, NULL, pva)) {
+-			if (pva)
+-				kmem_cache_free(vmap_area_cachep, pva);
+-		}
+-	}
++	spin_lock_irqsave(&vmap_area_lock, lock_flags);
+ 
+-	spin_lock(&vmap_area_lock);
+-	preempt_enable();
++	if (pva && __this_cpu_cmpxchg(ne_fit_preload_node, NULL, pva))
++		kmem_cache_free(vmap_area_cachep, pva);
+ 
+ 	/*
+ 	 * If an allocation fails, the "vend" address is
+@@ -1116,7 +1391,7 @@ static struct vmap_area *alloc_vmap_area(unsigned long size,
+ 	va->vm = NULL;
+ 	insert_vmap_area(va, &vmap_area_root, &vmap_area_list);
+ 
+-	spin_unlock(&vmap_area_lock);
++	spin_unlock_irqrestore(&vmap_area_lock, lock_flags);
+ 
+ 	BUG_ON(!IS_ALIGNED(va->va_start, align));
+ 	BUG_ON(va->va_start < vstart);
+@@ -1125,7 +1400,7 @@ static struct vmap_area *alloc_vmap_area(unsigned long size,
+ 	return va;
+ 
+ overflow:
+-	spin_unlock(&vmap_area_lock);
++	spin_unlock_irqrestore(&vmap_area_lock, lock_flags);
+ 	if (!purged) {
+ 		purge_vmap_area_lazy();
+ 		purged = 1;
+@@ -1180,9 +1455,10 @@ static void __free_vmap_area(struct vmap_area *va)
+  */
+ static void free_vmap_area(struct vmap_area *va)
+ {
+-	spin_lock(&vmap_area_lock);
++	unsigned long lock_flags;
++	spin_lock_irqsave(&vmap_area_lock, lock_flags);
+ 	__free_vmap_area(va);
+-	spin_unlock(&vmap_area_lock);
++	spin_unlock_irqrestore(&vmap_area_lock, lock_flags);
+ }
+ 
+ /*
+@@ -1248,6 +1524,7 @@ static bool __purge_vmap_area_lazy(unsigned long start, unsigned long end)
+ 	struct llist_node *valist;
+ 	struct vmap_area *va;
+ 	struct vmap_area *n_va;
++	unsigned long lock_flags;
+ 
+ 	lockdep_assert_held(&vmap_purge_lock);
+ 
+@@ -1275,7 +1552,7 @@ static bool __purge_vmap_area_lazy(unsigned long start, unsigned long end)
+ 	flush_tlb_kernel_range(start, end);
+ 	resched_threshold = lazy_max_pages() << 1;
+ 
+-	spin_lock(&vmap_area_lock);
++	spin_lock_irqsave(&vmap_area_lock, lock_flags);
+ 	llist_for_each_entry_safe(va, n_va, valist, purge_list) {
+ 		unsigned long nr = (va->va_end - va->va_start) >> PAGE_SHIFT;
+ 
+@@ -1289,10 +1566,10 @@ static bool __purge_vmap_area_lazy(unsigned long start, unsigned long end)
+ 
+ 		atomic_long_sub(nr, &vmap_lazy_nr);
+ 
+-		if (atomic_long_read(&vmap_lazy_nr) < resched_threshold)
+-			cond_resched_lock(&vmap_area_lock);
++		//if (atomic_long_read(&vmap_lazy_nr) < resched_threshold)
++			//cond_resched_lock(&vmap_area_lock);
+ 	}
+-	spin_unlock(&vmap_area_lock);
++	spin_unlock_irqrestore(&vmap_area_lock, lock_flags);
+ 	return true;
+ }
+ 
+@@ -1327,10 +1604,11 @@ static void purge_vmap_area_lazy(void)
+ static void free_vmap_area_noflush(struct vmap_area *va)
+ {
+ 	unsigned long nr_lazy;
++	unsigned long lock_flags;
+ 
+-	spin_lock(&vmap_area_lock);
++	spin_lock_irqsave(&vmap_area_lock, lock_flags);
+ 	unlink_va(va, &vmap_area_root);
+-	spin_unlock(&vmap_area_lock);
++	spin_unlock_irqrestore(&vmap_area_lock, lock_flags);
+ 
+ 	nr_lazy = atomic_long_add_return((va->va_end - va->va_start) >>
+ 				PAGE_SHIFT, &vmap_lazy_nr);
+@@ -1358,10 +1636,11 @@ static void free_unmap_vmap_area(struct vmap_area *va)
+ static struct vmap_area *find_vmap_area(unsigned long addr)
+ {
+ 	struct vmap_area *va;
++	unsigned long lock_flags;
+ 
+-	spin_lock(&vmap_area_lock);
++	spin_lock_irqsave(&vmap_area_lock, lock_flags);
+ 	va = __find_vmap_area(addr);
+-	spin_unlock(&vmap_area_lock);
++	spin_unlock_irqrestore(&vmap_area_lock, lock_flags);
+ 
+ 	return va;
+ }
+@@ -1897,11 +2176,14 @@ static void vmap_init_free_space(void)
+ 	}
+ }
+ 
++
+ void __init vmalloc_init(void)
+ {
+ 	struct vmap_area *va;
+ 	struct vm_struct *tmp;
+-	int i;
++	int i, rv;
++
++	rv = 0;
+ 
+ 	/*
+ 	 * Create the cache for vmap_area objects.
+@@ -1937,8 +2219,34 @@ void __init vmalloc_init(void)
+ 	 */
+ 	vmap_init_free_space();
+ 	vmap_initialized = true;
++
++	/*
++	 * setup vmalloc migration
++	 */
++
++	
++	
++	
++	
++	
++
++
++}
++
++void __init vmalloc_mig_init(void)
++{
++	int rv;
++	pr_info("VMALLOC MIG INIT CALLED!!!!\n");
++	rv = vmalloc_mig_mount();
++	rv |= setup_migration(&vmalloc_mig);
++	if(rv) {
++		pr_err("Cannot setup migration for vmalloc\n");
++	}
++	vmalloc_mig_on = 1;
++	pr_info("[COF] vmalloc_mig_init: vmalloc migration is now setup.\n");
+ }
+ 
++
+ /**
+  * map_kernel_range_noflush - map kernel VM area with the specified pages
+  * @addr: start of the VM area to map
+@@ -2017,13 +2325,15 @@ EXPORT_SYMBOL_GPL(map_vm_area);
+ static void setup_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
+ 			      unsigned long flags, const void *caller)
+ {
+-	spin_lock(&vmap_area_lock);
++	unsigned long lock_flags;
++
++	spin_lock_irqsave(&vmap_area_lock, lock_flags);
+ 	vm->flags = flags;
+ 	vm->addr = (void *)va->va_start;
+ 	vm->size = va->va_end - va->va_start;
+ 	vm->caller = caller;
+ 	va->vm = vm;
+-	spin_unlock(&vmap_area_lock);
++	spin_unlock_irqrestore(&vmap_area_lock, lock_flags);
+ }
+ 
+ static void clear_vm_uninitialized_flag(struct vm_struct *vm)
+@@ -2044,7 +2354,7 @@ static struct vm_struct *__get_vm_area_node(unsigned long size,
+ 	struct vmap_area *va;
+ 	struct vm_struct *area;
+ 
+-	BUG_ON(in_interrupt());
++	//BUG_ON(in_interrupt());
+ 	size = PAGE_ALIGN(size);
+ 	if (unlikely(!size))
+ 		return NULL;
+@@ -2146,16 +2456,16 @@ struct vm_struct *find_vm_area(const void *addr)
+ struct vm_struct *remove_vm_area(const void *addr)
+ {
+ 	struct vmap_area *va;
++	unsigned long lock_flags;
++	//might_sleep();
+ 
+-	might_sleep();
+-
+-	spin_lock(&vmap_area_lock);
++	spin_lock_irqsave(&vmap_area_lock, lock_flags);
+ 	va = __find_vmap_area((unsigned long)addr);
+ 	if (va && va->vm) {
+ 		struct vm_struct *vm = va->vm;
+ 
+ 		va->vm = NULL;
+-		spin_unlock(&vmap_area_lock);
++		spin_unlock_irqrestore(&vmap_area_lock, lock_flags);
+ 
+ 		kasan_free_shadow(vm);
+ 		free_unmap_vmap_area(va);
+@@ -2163,7 +2473,7 @@ struct vm_struct *remove_vm_area(const void *addr)
+ 		return vm;
+ 	}
+ 
+-	spin_unlock(&vmap_area_lock);
++	spin_unlock_irqrestore(&vmap_area_lock, lock_flags);
+ 	return NULL;
+ }
+ 
+@@ -2327,7 +2637,7 @@ void vfree(const void *addr)
+ 
+ 	kmemleak_free(addr);
+ 
+-	might_sleep_if(!in_interrupt());
++	//might_sleep_if(!in_interrupt());
+ 
+ 	if (!addr)
+ 		return;
+@@ -2386,7 +2696,7 @@ void *vmap(struct page **pages, unsigned int count,
+ 		vunmap(area->addr);
+ 		return NULL;
+ 	}
+-
++	area->cof_page = NULL;
+ 	return area->addr;
+ }
+ EXPORT_SYMBOL(vmap);
+@@ -2405,6 +2715,14 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
+ 					0 :
+ 					__GFP_HIGHMEM;
+ 
++	
++	if(alloc_mask & __GFP_ATOMIC || nested_gfp & __GFP_ATOMIC) {
++	//	pr_info("__vmalloc_area_node: alloc_mask/nested_gfp has atomic flag\n");
++	}
++	if(gfp_mask & __GFP_ATOMIC) {
++	//	pr_info("__vmalloc_area_node: gfp_mask has atomic flag\n");
++	}
++	
+ 	nr_pages = get_vm_area_size(area) >> PAGE_SHIFT;
+ 	array_size = (nr_pages * sizeof(struct page *));
+ 
+@@ -2440,6 +2758,10 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
+ 			goto fail;
+ 		}
+ 		area->pages[i] = page;
++		if(vmalloc_mig_on){
++			set_page_private(page, (unsigned long) area); //cof mod -- store vm_struct in private field of struct page for reverse mapping of vmalloc page.
++			set_vmalloc_page_movable(page, &vmalloc_mig);
++		}
+ 		if (gfpflags_allow_blocking(gfp_mask|highmem_mask))
+ 			cond_resched();
+ 	}
+@@ -2485,6 +2807,9 @@ void *__vmalloc_node_range(unsigned long size, unsigned long align,
+ 	unsigned long real_size = size;
+ 
+ 	size = PAGE_ALIGN(size);
++	if(!vmap_initialized) {
++		return ERR_PTR(-EBUSY);
++	}
+ 	if (!size || (size >> PAGE_SHIFT) > totalram_pages())
+ 		goto fail;
+ 
+@@ -3221,6 +3546,7 @@ struct vm_struct **pcpu_get_vm_areas(const unsigned long *offsets,
+ 	unsigned long base, start, size, end, last_end;
+ 	bool purged = false;
+ 	enum fit_type type;
++	unsigned long lock_flags;
+ 
+ 	/* verify parameters and allocate data structures */
+ 	BUG_ON(offset_in_page(align) || !is_power_of_2(align));
+@@ -3262,7 +3588,7 @@ struct vm_struct **pcpu_get_vm_areas(const unsigned long *offsets,
+ 			goto err_free;
+ 	}
+ retry:
+-	spin_lock(&vmap_area_lock);
++	spin_lock_irqsave(&vmap_area_lock, lock_flags);
+ 
+ 	/* start scanning - we scan from the top, begin with the last area */
+ 	area = term_area = last_area;
+@@ -3348,7 +3674,7 @@ struct vm_struct **pcpu_get_vm_areas(const unsigned long *offsets,
+ 		insert_vmap_area(va, &vmap_area_root, &vmap_area_list);
+ 	}
+ 
+-	spin_unlock(&vmap_area_lock);
++	spin_unlock_irqrestore(&vmap_area_lock, lock_flags);
+ 
+ 	/* insert all vm's */
+ 	for (area = 0; area < nr_vms; area++)
+@@ -3366,7 +3692,7 @@ struct vm_struct **pcpu_get_vm_areas(const unsigned long *offsets,
+ 	}
+ 
+ overflow:
+-	spin_unlock(&vmap_area_lock);
++	spin_unlock_irqrestore(&vmap_area_lock, lock_flags);
+ 	if (!purged) {
+ 		purge_vmap_area_lazy();
+ 		purged = true;
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 867e61df00db..3efb4de58ab4 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -194,7 +194,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
+ 		gfp_mask |= __GFP_MEMALLOC;
+ 
+ 	/* Get the HEAD */
+-	skb = kmem_cache_alloc_node(cache, gfp_mask & ~__GFP_DMA, node);
++	skb = kmem_cache_alloc_node(cache, (gfp_mask & ~__GFP_DMA) | ___GFP_COF, node);
+ 	if (!skb)
+ 		goto out;
+ 	prefetchw(skb);
+@@ -206,7 +206,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
+ 	 */
+ 	size = SKB_DATA_ALIGN(size);
+ 	size += SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
+-	data = kmalloc_reserve(size, gfp_mask, node, &pfmemalloc);
++	data = kmalloc_reserve(size, gfp_mask , node, &pfmemalloc);
+ 	if (!data)
+ 		goto nodata;
+ 	/* kmalloc(size) might give us more room than requested.
+@@ -307,7 +307,7 @@ struct sk_buff *__build_skb(void *data, unsigned int frag_size)
+ {
+ 	struct sk_buff *skb;
+ 
+-	skb = kmem_cache_alloc(skbuff_head_cache, GFP_ATOMIC);
++	skb = kmem_cache_alloc(skbuff_head_cache, GFP_ATOMIC | ___GFP_COF);
+ 	if (unlikely(!skb))
+ 		return NULL;
+ 
+@@ -1445,7 +1445,7 @@ struct sk_buff *skb_clone(struct sk_buff *skb, gfp_t gfp_mask)
+ 		if (skb_pfmemalloc(skb))
+ 			gfp_mask |= __GFP_MEMALLOC;
+ 
+-		n = kmem_cache_alloc(skbuff_head_cache, gfp_mask);
++		n = kmem_cache_alloc(skbuff_head_cache, gfp_mask | ___GFP_COF);
+ 		if (!n)
+ 			return NULL;
+ 
+@@ -4146,14 +4146,14 @@ void __init skb_init(void)
+ 	skbuff_head_cache = kmem_cache_create_usercopy("skbuff_head_cache",
+ 					      sizeof(struct sk_buff),
+ 					      0,
+-					      SLAB_HWCACHE_ALIGN|SLAB_PANIC,
++					      SLAB_HWCACHE_ALIGN|SLAB_PANIC | SLAB_COF,
+ 					      offsetof(struct sk_buff, cb),
+ 					      sizeof_field(struct sk_buff, cb),
+ 					      NULL);
+ 	skbuff_fclone_cache = kmem_cache_create("skbuff_fclone_cache",
+ 						sizeof(struct sk_buff_fclones),
+ 						0,
+-						SLAB_HWCACHE_ALIGN|SLAB_PANIC,
++						SLAB_HWCACHE_ALIGN|SLAB_PANIC | SLAB_COF,
+ 						NULL);
+ 	skb_extensions_init();
+ }
+diff --git a/net/core/sock.c b/net/core/sock.c
+index ac78a570e43a..4dd95018a134 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1596,7 +1596,7 @@ static struct sock *sk_prot_alloc(struct proto *prot, gfp_t priority,
+ 
+ 	slab = prot->slab;
+ 	if (slab != NULL) {
+-		sk = kmem_cache_alloc(slab, priority & ~__GFP_ZERO);
++		sk = kmem_cache_alloc(slab, (priority & ~__GFP_ZERO) | ___GFP_COF);
+ 		if (!sk)
+ 			return sk;
+ 		if (want_init_on_alloc(priority))
+@@ -3356,7 +3356,7 @@ static int req_prot_init(const struct proto *prot)
+ 
+ 	rsk_prot->slab = kmem_cache_create(rsk_prot->slab_name,
+ 					   rsk_prot->obj_size, 0,
+-					   SLAB_ACCOUNT | prot->slab_flags,
++					   SLAB_ACCOUNT | prot->slab_flags | SLAB_COF,
+ 					   NULL);
+ 
+ 	if (!rsk_prot->slab) {
+@@ -3375,7 +3375,7 @@ int proto_register(struct proto *prot, int alloc_slab)
+ 		prot->slab = kmem_cache_create_usercopy(prot->name,
+ 					prot->obj_size, 0,
+ 					SLAB_HWCACHE_ALIGN | SLAB_ACCOUNT |
+-					prot->slab_flags,
++					prot->slab_flags | SLAB_COF,
+ 					prot->useroffset, prot->usersize,
+ 					NULL);
+ 
+@@ -3399,7 +3399,7 @@ int proto_register(struct proto *prot, int alloc_slab)
+ 						  prot->twsk_prot->twsk_obj_size,
+ 						  0,
+ 						  SLAB_ACCOUNT |
+-						  prot->slab_flags,
++						  prot->slab_flags | SLAB_COF,
+ 						  NULL);
+ 			if (prot->twsk_prot->twsk_slab == NULL)
+ 				goto out_free_timewait_sock_slab_name;
+diff --git a/net/ipv4/fib_trie.c b/net/ipv4/fib_trie.c
+index 1ab2fb6bb37d..ec194e7e0cc0 100644
+--- a/net/ipv4/fib_trie.c
++++ b/net/ipv4/fib_trie.c
+@@ -357,10 +357,9 @@ static struct key_vector *leaf_new(t_key key, struct fib_alias *fa)
+ 	struct key_vector *l;
+ 	struct tnode *kv;
+ 
+-	kv = kmem_cache_alloc(trie_leaf_kmem, GFP_KERNEL);
++	kv = kmem_cache_alloc(trie_leaf_kmem, GFP_KERNEL/*|___GFP_COF*/);
+ 	if (!kv)
+ 		return NULL;
+-
+ 	/* initialize key vector */
+ 	l = kv->kv;
+ 	l->key = key;
+@@ -1201,7 +1200,7 @@ int fib_table_insert(struct net *net, struct fib_table *tb,
+ 				goto out;
+ 			}
+ 			err = -ENOBUFS;
+-			new_fa = kmem_cache_alloc(fn_alias_kmem, GFP_KERNEL);
++			new_fa = kmem_cache_alloc(fn_alias_kmem, GFP_KERNEL/*|___GFP_COF*/);
+ 			if (!new_fa)
+ 				goto out;
+ 
+@@ -1255,7 +1254,7 @@ int fib_table_insert(struct net *net, struct fib_table *tb,
+ 
+ 	nlflags |= NLM_F_CREATE;
+ 	err = -ENOBUFS;
+-	new_fa = kmem_cache_alloc(fn_alias_kmem, GFP_KERNEL);
++	new_fa = kmem_cache_alloc(fn_alias_kmem, GFP_KERNEL/*|___GFP_COF*/);
+ 	if (!new_fa)
+ 		goto out;
+ 
+@@ -1758,7 +1757,7 @@ struct fib_table *fib_trie_unmerge(struct fib_table *oldtb)
+ 				continue;
+ 
+ 			/* clone fa for new local table */
+-			new_fa = kmem_cache_alloc(fn_alias_kmem, GFP_KERNEL);
++			new_fa = kmem_cache_alloc(fn_alias_kmem, GFP_KERNEL/*|___GFP_COF*/);
+ 			if (!new_fa)
+ 				goto out;
+ 
+@@ -2206,11 +2205,11 @@ void __init fib_trie_init(void)
+ {
+ 	fn_alias_kmem = kmem_cache_create("ip_fib_alias",
+ 					  sizeof(struct fib_alias),
+-					  0, SLAB_PANIC, NULL);
++					  0, SLAB_PANIC/*|SLAB_COF*/, NULL);
+ 
+ 	trie_leaf_kmem = kmem_cache_create("ip_fib_trie",
+ 					   LEAF_SIZE,
+-					   0, SLAB_PANIC, NULL);
++					   0, SLAB_PANIC/*|SLAB_COF*/, NULL);
+ }
+ 
+ struct fib_table *fib_trie_table(u32 id, struct fib_table *alias)
+diff --git a/net/ipv4/inet_timewait_sock.c b/net/ipv4/inet_timewait_sock.c
+index c411c87ae865..68f38d2a50d7 100644
+--- a/net/ipv4/inet_timewait_sock.c
++++ b/net/ipv4/inet_timewait_sock.c
+@@ -162,7 +162,7 @@ struct inet_timewait_sock *inet_twsk_alloc(const struct sock *sk,
+ 		return NULL;
+ 
+ 	tw = kmem_cache_alloc(sk->sk_prot_creator->twsk_prot->twsk_slab,
+-			      GFP_ATOMIC);
++			      GFP_ATOMIC | ___GFP_COF);
+ 	if (tw) {
+ 		const struct inet_sock *inet = inet_sk(sk);
+ 
+-- 
+2.25.1
+
